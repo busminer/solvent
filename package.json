@@ -1,0 +1,17 @@
+{
+  "name": "solvent",
+  "version": "0.1.0",
+  "description": "SOLVENT — agentic receivables operator. Recovers unpaid Stripe invoices by gently reminding, not aggressively collecting.",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "demo": "node src/index.js --demo"
+  },
+  "keywords": ["agent", "receivables", "stripe", "hermes", "nemotron"],
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "stripe": "^16.12.0"
+  }
+}
