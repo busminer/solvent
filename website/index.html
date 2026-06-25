@@ -88,6 +88,24 @@
 
     .nav-links a:hover { color: #fff; }
 
+    .nav-demo {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 8px;
+      padding: 13px 18px;
+      color: #f2f6fb;
+      background: rgba(14, 21, 31, .78);
+      font-weight: 900;
+      font-family: var(--sans);
+      cursor: pointer;
+    }
+
+    .nav-demo:hover {
+      color: #fff;
+      border-color: rgba(55,231,189,.34);
+      background: rgba(20, 29, 40, .9);
+    }
+
     .nav-cta {
       padding: 13px 18px;
       border-radius: 8px;
@@ -1283,12 +1301,24 @@
         height: 38px;
       }
 
+      .nav-links {
+        gap: 8px;
+      }
+
       .nav-links a:not(.nav-cta) {
         display: none;
       }
 
+      .nav-demo,
       .nav-cta {
         padding: 11px 13px;
+        min-height: 46px;
+        white-space: nowrap;
+        font-size: 14px;
+      }
+
+      .hero-actions {
+        display: none;
       }
 
       .contact-dock {
@@ -1553,6 +1583,7 @@
         <a href="#agent">Agent</a>
         <a href="#demo-run">Run it</a>
         <a href="#contact">Contact</a>
+        <button class="nav-demo" type="button" id="runDemoBtnTop">Run demo</button>
         <a class="nav-cta" href="https://github.com/busminer/solvent" target="_blank" rel="noopener">View code</a>
       </div>
     </nav>
@@ -1830,6 +1861,7 @@
     const demoSafety = document.getElementById("demoSafety");
     const demoApproval = document.getElementById("demoApproval");
     const demoProgress = document.getElementById("demoProgress");
+    const runDemoBtnTop = document.getElementById("runDemoBtnTop");
     const runDemoBtn = document.getElementById("runDemoBtn");
     const runDemoBtnInline = document.getElementById("runDemoBtnInline");
     let demoTimers = [];
@@ -1946,6 +1978,7 @@
       clearDemoTimers();
     }
 
+    runDemoBtnTop.addEventListener("click", () => runDemo(true));
     runDemoBtn.addEventListener("click", () => runDemo(true));
     runDemoBtnInline.addEventListener("click", () => runDemo(false));
     demoRestart.addEventListener("click", () => runDemo(true));
