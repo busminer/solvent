@@ -21,7 +21,7 @@ Recover the revenue you've already earned — by gently reminding, not aggressiv
 
 ## What it does
 
-SOLVENT turns overdue Stripe invoices into managed recovery cases. For each unpaid invoice it:
+SOLVENT turns overdue Stripe invoices into managed recovery cases. It first **scores** every invoice by how likely it is to be recovered and works the queue by expected value — chasing where the money actually is, not whichever invoice happens to be first. Then, for each case it:
 
 1. **Reads** the case (amount, age, history, friction cause) and **decides** the softest stage that could work — using **Nous Hermes**.
 2. **Drafts** the message in the right tone, then **screens** that text with **NVIDIA Nemotron Content Safety** (tighten-only).
@@ -48,7 +48,32 @@ Gentle reminders auto-send. Anything irreversible — firmer tones, payment plan
                                                   └─────────────────────┘
 ```
 
-**Two-sided tighten-only:** the *decision* has a code-enforced floor (large/old invoices can never be softer than `firm`, so they always reach a human), and the *message* is screened by Nemotron (unsafe text is escalated, never auto-sent). Models may go stricter; they can never go softer than the code allows.
+The queue is ordered up front by **expected recovery** (`scoreLikelihood × amountDue`), so effort flows to the cases most likely to pay. **Two-sided tighten-only:** the *decision* has a code-enforced floor (large/old invoices can never be softer than `firm`, so they always reach a human), and the *message* is screened by Nemotron (unsafe text is escalated, never auto-sent). Models may go stricter; they can never go softer than the code allows.
+
+## Recovery-likelihood scoring
+
+`src/core/score.js` is the agent's prioritizer. `scoreLikelihood(invoice)` returns a transparent `0..1` probability that an overdue invoice will be recovered, with a **per-factor breakdown** so the decision is explainable — not a black box:
+
+| Factor | Weight | Signal |
+|---|---|---|
+| aging | 0.35 | exponential decay by days overdue (strongest predictor) |
+| history | 0.20 | how the customer has paid before |
+| engagement | 0.20 | opened / clicked a reminder |
+| payment method | 0.10 | valid / expired / none |
+| attempts | 0.08 | prior nudges without payment |
+| amount | 0.07 | mild penalty for very large balances |
+
+`prioritize(invoices)` ranks the queue by `score × amountDue`. Run it standalone with `node src/core/score.js` to print the ranked demo queue.
+
+## Live human-in-the-loop approvals
+
+With a Telegram bot configured, risky steps don't auto-resolve — they pause and ask. `src/integrations/telegram.js` sends a card with **Approve / Hold** buttons to your chat and waits for a real tap before the agent proceeds. This is the human holding the line, live.
+
+```bash
+npm start -- --tg --verbose   # risky steps wait for a real Telegram tap
+```
+
+Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in `.env`, and message your bot once so it can reply. Without them, the loop still runs and logs approvals to the console.
 
 ## Quickstart
 
@@ -69,6 +94,8 @@ npm run demo -- --verbose      # cinematic run with live connection traces
 |---|---|
 | `npm run demo` | Clean demo run (auto-approves risky items for recording) |
 | `npm run demo -- --verbose` | Same, with live `[HERMES] [NEMOTRON] [STRIPE]` connection traces |
+| `npm start -- --tg --verbose` | Live run: risky steps wait for a real Telegram tap (Approve / Hold) |
+| `node src/core/score.js` | Print the ranked recovery queue (scoring demo) |
 | `node llmcheck.js` | Preflight: confirm both model keys are live |
 | `node reset-seed.js` | Create/refresh the 5 demo invoices in Stripe (test mode) |
 | `node diag.js` | Inspect what's currently in your Stripe account |
@@ -83,6 +110,7 @@ src/
   config.js              settings + HARD CAPS (enforced in code)
   data/invoices.js       mock invoices (replaced by a Stripe pull in production)
   core/
+    score.js             recovery-likelihood scoring + queue prioritization
     policy.js            the agent's "character": stages, rules, and the code floor
     safety.js            deterministic gate + Nemotron Content Safety screen (tighten-only)
     agent.js             orchestrator: reason → propose → screen → act/queue → settle
@@ -93,6 +121,7 @@ src/
     llm.js               real Hermes + Nemotron calls (OpenAI-compatible)
     stripe.js            Stripe test-mode wrapper (mock fallback without a key)
     notify.js            notifications (console / Telegram)
+    telegram.js          live approval cards — Approve / Hold, waits for a real tap
   util/trace.js          verbose connection tracer (--verbose)
 ```
 
