@@ -1,355 +1,590 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SOLVENT - agentic receivables operator for the Hermes Business Hackathon</title>
-  <meta name="description" content="SOLVENT is an agentic receivables operator powered by Nous Hermes, NVIDIA Nemotron Safety, and Stripe. It recovers overdue invoices while every irreversible step waits for human approval.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <title>SOLVENT - AI Receivables Operator</title>
   <style>
-    * { box-sizing: border-box; }
-
     :root {
-      --bg: #040507;
-      --bg2: #080b10;
-      --panel: rgba(16, 22, 30, .78);
-      --panel2: rgba(24, 32, 43, .88);
-      --line: rgba(230, 238, 248, .1);
-      --line2: rgba(230, 238, 248, .2);
-      --text: #f0f6fb;
-      --muted: #9aa8b7;
-      --faint: #637284;
+      color-scheme: dark;
+      --bg: #020407;
+      --panel: rgba(10, 15, 22, .82);
+      --line: rgba(255,255,255,.12);
+      --text: #f4f7fb;
+      --muted: #94a3b8;
+      --faint: #64748b;
+      --solvent: #37e7bd;
       --nvidia: #76b900;
-      --stripe: #8b5cf6;
-      --stripe2: #36c5f0;
-      --hermes: #f0c86a;
-      --safe: #37e7bd;
-      --warn: #ffcf64;
-      --bad: #ff6f96;
-      --ink: #07100d;
-      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --stripe: #635bff;
+      --hermes: #eef2f7;
+      --human: #39d5ff;
+      --danger: #ff5d7d;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --max: 1180px;
-      --shadow: 0 30px 100px rgba(0, 0, 0, .55);
     }
 
-    html { scroll-behavior: smooth; }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      color: var(--text);
-      font-family: var(--sans);
-      line-height: 1.5;
-      background:
-        linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px),
-        radial-gradient(circle at 12% 8%, rgba(118, 185, 0, .16), transparent 30%),
-        radial-gradient(circle at 88% 18%, rgba(139, 92, 246, .18), transparent 34%),
-        radial-gradient(circle at 50% 110%, rgba(54, 197, 240, .12), transparent 42%),
-        var(--bg);
-      background-size: 40px 40px, 40px 40px, auto, auto, auto, auto;
-      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
       overflow-x: hidden;
-    }
-
-    body:before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
+      font-family: var(--sans);
+      color: var(--text);
       background:
-        linear-gradient(90deg, transparent, rgba(255,255,255,.045), transparent) 0 0 / 220px 100%;
-      opacity: .16;
-      animation: sweepPage 9s linear infinite;
-      z-index: -1;
-    }
-
-    @keyframes sweepPage {
-      from { background-position: -240px 0; }
-      to { background-position: calc(100vw + 240px) 0; }
+        radial-gradient(circle at 18% 22%, rgba(118,185,0,.22), transparent 28%),
+        radial-gradient(circle at 78% 18%, rgba(99,91,255,.23), transparent 26%),
+        radial-gradient(circle at 66% 82%, rgba(55,231,189,.18), transparent 30%),
+        linear-gradient(120deg, #030703 0%, #05060a 48%, #0d0717 100%);
     }
 
     a { color: inherit; text-decoration: none; }
-    button { font: inherit; }
-    .wrap { width: min(var(--max), calc(100% - 40px)); margin: 0 auto; }
 
     .topbar {
-      position: sticky;
+      position: fixed;
+      left: 0;
+      right: 0;
       top: 0;
-      z-index: 30;
-      border-bottom: 1px solid var(--line);
-      background: rgba(4, 5, 7, .74);
-      backdrop-filter: blur(18px);
+      z-index: 60;
+      display: flex;
+      justify-content: center;
+      padding: 16px 24px;
+      background: linear-gradient(180deg, rgba(2,4,7,.92), rgba(2,4,7,.58), transparent);
+      pointer-events: none;
     }
 
     .nav {
-      min-height: 68px;
+      width: min(1280px, calc(100vw - 48px));
+      height: 58px;
       display: flex;
       align-items: center;
-      gap: 22px;
+      justify-content: space-between;
+      pointer-events: auto;
     }
 
     .brand {
       display: inline-flex;
       align-items: center;
       gap: 12px;
-      font-weight: 900;
-      letter-spacing: .16em;
-    }
-
-    .mark {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      display: block;
-      position: relative;
-      object-fit: cover;
-      box-shadow: 0 0 32px rgba(55, 231, 189, .28);
-    }
-
-    .navlinks {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .navlinks a:hover { color: var(--text); }
-
-    .nav-cta {
-      color: var(--ink) !important;
-      background: linear-gradient(135deg, var(--safe), var(--nvidia));
-      border-radius: 8px;
-      padding: 10px 15px;
-      box-shadow: 0 0 36px rgba(118,185,0,.22);
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, .92fr) minmax(520px, 1.08fr);
-      align-items: center;
-      gap: 42px;
-      padding: 26px 0 34px;
-    }
-
-    .kicker {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 22px;
-    }
-
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 8px 11px;
-      color: var(--muted);
-      background: rgba(10, 14, 20, .74);
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .08em;
+      font-weight: 950;
+      letter-spacing: .18em;
       text-transform: uppercase;
     }
 
-    .chip i {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--safe);
-      box-shadow: 0 0 16px currentColor;
-    }
-
-    .chip img {
-      width: 18px;
-      height: 18px;
-      border-radius: 5px;
-      object-fit: cover;
-      box-shadow: 0 0 14px rgba(255,255,255,.12);
-    }
-
-    .chip.nv { color: #b9f16d; border-color: rgba(118,185,0,.3); }
-    .chip.nv i { background: var(--nvidia); }
-    .chip.st { color: #c9b8ff; border-color: rgba(139,92,246,.35); }
-    .chip.st i { background: var(--stripe); }
-    .chip.hm { color: #ffe1a0; border-color: rgba(240,200,106,.32); }
-    .chip.hm i { background: var(--hermes); }
-
-    h1 {
-      margin: 0;
-      max-width: 10.8ch;
-      font-size: clamp(46px, 6.2vw, 86px);
-      line-height: .92;
-      letter-spacing: -.05em;
-      font-weight: 900;
-    }
-
-    .gradient-word {
-      background: linear-gradient(100deg, var(--safe), var(--nvidia) 48%, var(--stripe2));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      text-shadow: 0 0 44px rgba(55,231,189,.1);
-    }
-
-    .lead {
-      margin: 26px 0 0;
-      max-width: 640px;
-      color: var(--muted);
-      font-size: clamp(17px, 1.8vw, 20px);
-      line-height: 1.65;
-    }
-
-    .lead b { color: var(--text); font-weight: 800; }
-
-    .actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 30px;
-    }
-
-    .btn {
-      min-height: 48px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      border: 1px solid var(--line2);
-      border-radius: 9px;
-      padding: 0 18px;
-      color: var(--text);
-      background: rgba(22, 30, 41, .86);
-      font-weight: 850;
-      cursor: pointer;
-      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
-    }
-
-    .btn:hover {
-      transform: translateY(-2px);
-      border-color: rgba(55,231,189,.5);
-      box-shadow: 0 18px 40px rgba(0,0,0,.22);
-    }
-
-    .btn.primary {
-      color: var(--ink);
-      border-color: transparent;
-      background: linear-gradient(135deg, var(--safe), var(--nvidia));
-      box-shadow: 0 0 34px rgba(118,185,0,.25);
-    }
-
-    .btn.running {
-      animation: runButtonPulse 1s ease-in-out infinite;
-    }
-
-    @keyframes runButtonPulse {
-      0%, 100% { filter: brightness(1); box-shadow: 0 0 34px rgba(118,185,0,.25); }
-      50% { filter: brightness(1.16); box-shadow: 0 0 46px rgba(55,231,189,.34); }
-    }
-
-    .hero-proof {
-      display: none;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 28px;
-      max-width: 680px;
-    }
-
-    .proof-card {
-      border: 1px solid var(--line);
+    .brand img {
+      width: 42px;
+      height: 42px;
       border-radius: 10px;
-      background: rgba(12, 17, 24, .66);
-      padding: 14px;
+      box-shadow: 0 0 28px rgba(55,231,189,.16);
     }
 
-    .proof-card b {
-      display: block;
-      font-size: 18px;
-      line-height: 1;
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      color: #9facbd;
+      font-weight: 850;
     }
 
-    .proof-card span {
-      display: block;
-      margin-top: 7px;
-      color: var(--faint);
-      font-size: 12px;
-      line-height: 1.35;
+    .nav-links a:hover { color: #fff; }
+
+    .nav-cta {
+      padding: 13px 18px;
+      border-radius: 8px;
+      color: #021009;
+      background: linear-gradient(135deg, #42e297, #77d900);
+      box-shadow: 0 14px 40px rgba(118,217,0,.18);
     }
 
-    .agent-stage {
-      position: relative;
-      border: 1px solid var(--line2);
-      border-radius: 18px;
-      background:
-        radial-gradient(circle at 50% 50%, rgba(55,231,189,.1), transparent 33%),
-        linear-gradient(180deg, rgba(20, 27, 38, .82), rgba(6, 9, 14, .95));
-      min-height: 540px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      isolation: isolate;
-    }
-
-    .agent-stage .brand-watermark {
-      position: absolute;
+    .contact-dock {
+      position: fixed;
       right: 22px;
-      top: 58px;
-      width: 118px;
-      opacity: .18;
-      filter: drop-shadow(0 0 18px rgba(55,231,189,.5));
-      z-index: -1;
-      animation: watermarkFloat 7s ease-in-out infinite;
+      top: 50%;
+      z-index: 55;
+      transform: translateY(-50%);
+      display: grid;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 999px;
+      background: rgba(6, 9, 14, .72);
+      box-shadow: 0 20px 70px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06);
+      backdrop-filter: blur(16px);
     }
 
-    @keyframes watermarkFloat {
-      0%, 100% { transform: translateY(0) rotate(-2deg); opacity: .14; }
-      50% { transform: translateY(8px) rotate(2deg); opacity: .24; }
+    .dock-link {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(15, 22, 32, .76);
+      color: #d9e4f2;
+      font-weight: 950;
+      font-size: 13px;
+      transition: transform .2s ease, border-color .2s ease, color .2s ease, background .2s ease;
     }
 
-    .agent-stage:before {
+    .dock-link svg {
+      width: 19px;
+      height: 19px;
+      fill: currentColor;
+    }
+
+    .dock-link:hover {
+      transform: translateX(-3px);
+      border-color: rgba(55,231,189,.45);
+      color: var(--solvent);
+      background: rgba(20, 33, 43, .92);
+    }
+
+    .stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      min-height: 820px;
+      isolation: isolate;
+      display: grid;
+      place-items: center;
+      padding: 104px 30px 46px;
+    }
+
+    .stage:before,
+    .stage:after {
       content: "";
       position: absolute;
       inset: 0;
-      background:
-        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
-      background-size: 34px 34px;
-      mask-image: radial-gradient(circle at center, black, transparent 76%);
-      opacity: .75;
-      z-index: -2;
+      pointer-events: none;
     }
 
-    .agent-stage:after {
+    .stage:before {
+      opacity: .36;
+      background-image:
+        linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle at 50% 50%, black 0%, transparent 72%);
+    }
+
+    .stage:after {
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.72), transparent 22%, transparent 76%, rgba(0,0,0,.6)),
+        linear-gradient(180deg, rgba(0,0,0,.38), transparent 20%, rgba(0,0,0,.55));
+      z-index: 9;
+    }
+
+    .scene {
+      position: relative;
+      z-index: 10;
+      width: min(1280px, calc(100vw - 60px));
+      height: min(760px, calc(100vh - 60px));
+      min-height: 650px;
+    }
+
+    .hud {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 540px;
+      z-index: 20;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border: 1px solid rgba(55,231,189,.24);
+      border-radius: 999px;
+      background: rgba(5, 10, 14, .72);
+      color: var(--solvent);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--solvent);
+      box-shadow: 0 0 18px var(--solvent);
+      animation: dotBeat 1.4s ease-in-out infinite;
+    }
+
+    h1 {
+      margin: 18px 0 0;
+      max-width: 560px;
+      font-size: clamp(52px, 5vw, 72px);
+      line-height: .9;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1 span {
+      display: block;
+      background: linear-gradient(100deg, #fff, #c8fff0 42%, #76b900 70%, #39d5ff);
+      -webkit-background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 0 28px rgba(55,231,189,.16));
+    }
+
+    .hud p {
+      margin: 20px 0 0;
+      max-width: 520px;
+      color: #b8c4d6;
+      font-size: 18px;
+      line-height: 1.55;
+    }
+
+    .hud strong { color: #fff; }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .stats {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 500px;
+      z-index: 20;
+    }
+
+    .stat {
+      min-height: 88px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(9, 14, 20, .72);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    .stat small {
+      display: block;
+      color: var(--faint);
+      font-family: var(--mono);
+      font-weight: 900;
+      font-size: 10px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .stat b {
+      display: block;
+      margin-top: 10px;
+      font-family: var(--mono);
+      font-size: 22px;
+      color: var(--text);
+    }
+
+    .reactor {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      width: min(720px, 54vw);
+      aspect-ratio: 1;
+      transform: translateY(-50%);
+      z-index: 12;
+    }
+
+    .rings,
+    .connectors,
+    .scan-field,
+    .orbit,
+    .core {
+      position: absolute;
+      inset: 0;
+    }
+
+    .ring {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: inset 0 0 50px rgba(55,231,189,.04);
+    }
+
+    .ring.r1 { width: 34%; height: 34%; border-color: rgba(55,231,189,.25); }
+    .ring.r2 { width: 54%; height: 54%; border-color: rgba(99,91,255,.23); animation: spin 18s linear infinite; }
+    .ring.r3 { width: 76%; height: 76%; border-color: rgba(118,185,0,.22); animation: spinReverse 28s linear infinite; }
+    .ring.r4 { width: 95%; height: 95%; border-style: dashed; border-color: rgba(255,213,107,.22); animation: spin 42s linear infinite; }
+
+    .ring.r2:before,
+    .ring.r3:before,
+    .ring.r4:before {
       content: "";
       position: absolute;
-      inset: -30%;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 24px currentColor;
+    }
+
+    .ring.r2 { color: var(--stripe); }
+    .ring.r3 { color: var(--nvidia); }
+    .ring.r4 { color: var(--hermes); }
+    .ring.r2:before { left: 17%; top: 4%; }
+    .ring.r3:before { right: 4%; top: 42%; }
+    .ring.r4:before { left: 60%; bottom: 2%; }
+
+    .connectors svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .connector {
+      fill: none;
+      stroke: rgba(255,255,255,.1);
+      stroke-width: 1.3;
+    }
+
+    .flow {
+      fill: none;
+      stroke-linecap: round;
+      stroke-width: 4;
+      stroke-dasharray: 9 420;
+      animation: flow 4.8s linear infinite;
+      filter: drop-shadow(0 0 11px currentColor);
+    }
+
+    .flow.invoice { color: var(--stripe); stroke: var(--stripe); animation-delay: 0s; }
+    .flow.reason { color: var(--hermes); stroke: var(--hermes); animation-delay: -1.2s; }
+    .flow.safety { color: var(--nvidia); stroke: var(--nvidia); animation-delay: -2.4s; }
+    .flow.approve { color: var(--human); stroke: var(--human); animation-delay: -3.6s; }
+
+    .scan-field {
+      left: 50%;
+      top: 50%;
+      width: 58%;
+      height: 58%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, transparent, rgba(118,185,0,.18), transparent 26%);
+      filter: blur(.2px);
+      opacity: .7;
+      animation: scanRotate 3.8s linear infinite;
+      mask-image: radial-gradient(circle, transparent 0 26%, black 29% 56%, transparent 62%);
+    }
+
+    .core {
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+    }
+
+    .core-shell {
+      position: relative;
+      width: 190px;
+      height: 190px;
+      display: grid;
+      place-items: center;
+      border-radius: 42px;
       background:
-        conic-gradient(from 0deg, transparent, rgba(118,185,0,.09), transparent, rgba(139,92,246,.12), transparent);
-      animation: rotateGlow 20s linear infinite;
-      z-index: -3;
+        radial-gradient(circle at 50% 38%, rgba(55,231,189,.22), transparent 45%),
+        linear-gradient(145deg, rgba(5, 9, 16, .96), rgba(3, 3, 9, .98));
+      border: 1px solid rgba(55,231,189,.24);
+      box-shadow:
+        0 0 0 20px rgba(55,231,189,.035),
+        0 0 0 54px rgba(55,231,189,.035),
+        0 0 90px rgba(55,231,189,.22),
+        inset 0 1px 0 rgba(255,255,255,.12);
+      animation: coreFloat 4.2s ease-in-out infinite;
     }
 
-    @keyframes rotateGlow {
-      to { transform: rotate(360deg); }
+    .core-shell:before {
+      content: "";
+      position: absolute;
+      inset: -14px;
+      border: 1px solid rgba(55,231,189,.22);
+      border-radius: 54px;
+      animation: corePing 2.4s ease-out infinite;
     }
 
-    .stage-top {
-      height: 48px;
+    .core-shell img {
+      width: 124px;
+      height: 124px;
+      border-radius: 32px;
+      object-fit: cover;
+      filter: drop-shadow(0 0 22px rgba(55,231,189,.5));
+    }
+
+    .core-label {
+      position: absolute;
+      bottom: -44px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 9px 14px;
+      border: 1px solid rgba(55,231,189,.24);
+      border-radius: 999px;
+      background: rgba(4, 9, 14, .82);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      white-space: nowrap;
+      text-transform: uppercase;
+      color: var(--solvent);
+    }
+
+    .node {
+      position: absolute;
+      width: 220px;
+      min-height: 112px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background:
+        linear-gradient(140deg, rgba(12, 18, 27, .94), rgba(4, 7, 12, .86));
+      box-shadow: 0 18px 60px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.06);
+      animation: nodeFloat 5s ease-in-out infinite;
+    }
+
+    .node:before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      opacity: .34;
+      pointer-events: none;
+      background: radial-gradient(circle at var(--x, 50%) var(--y, 0%), currentColor, transparent 38%);
+      filter: blur(10px);
+    }
+
+    .node-header {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 950;
+      font-size: 16px;
+    }
+
+    .node-header img {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      object-fit: cover;
+      background: rgba(255,255,255,.08);
+    }
+
+    .node em {
+      position: relative;
+      display: block;
+      margin-top: 10px;
+      color: currentColor;
+      font-family: var(--mono);
+      font-style: normal;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .node p {
+      position: relative;
+      margin: 10px 0 0;
+      color: #91a0b3;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .node.stripe {
+      left: -2%;
+      top: 34%;
+      color: var(--stripe);
+      --x: 15%;
+      --y: 16%;
+      animation-delay: -.2s;
+    }
+
+    .node.hermes {
+      right: -2%;
+      top: 13%;
+      color: var(--hermes);
+      --x: 74%;
+      --y: 14%;
+      animation-delay: -.9s;
+    }
+
+    .node.nemotron {
+      right: -2%;
+      bottom: 13%;
+      color: var(--nvidia);
+      --x: 78%;
+      --y: 24%;
+      animation-delay: -1.6s;
+    }
+
+    .node.human {
+      left: -2%;
+      bottom: 13%;
+      color: var(--human);
+      --x: 20%;
+      --y: 28%;
+      animation-delay: -2.2s;
+    }
+
+    .packet {
+      position: absolute;
+      z-index: 16;
+      display: grid;
+      place-items: center;
+      width: 74px;
+      height: 34px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 999px;
+      background: rgba(8, 12, 20, .88);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      box-shadow: 0 0 34px rgba(55,231,189,.18);
+    }
+
+    .packet.invoice { color: var(--stripe); animation: packetInvoice 8s linear infinite; }
+    .packet.prompt { color: var(--hermes); animation: packetPrompt 8s linear infinite; animation-delay: -2s; }
+    .packet.scan { color: var(--nvidia); animation: packetScan 8s linear infinite; animation-delay: -4s; }
+    .packet.paid { color: var(--solvent); animation: packetPaid 8s linear infinite; animation-delay: -6s; }
+
+    .terminal {
+      position: absolute;
+      left: 0;
+      bottom: 110px;
+      width: 500px;
+      z-index: 20;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 8px;
+      background: rgba(3, 6, 10, .82);
+      box-shadow: 0 20px 70px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.06);
+      overflow: hidden;
+    }
+
+    .terminal-top {
+      height: 42px;
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 0 18px;
-      border-bottom: 1px solid var(--line);
+      padding: 0 14px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
       color: var(--faint);
       font-family: var(--mono);
+      font-weight: 900;
       font-size: 12px;
     }
 
@@ -357,455 +592,499 @@
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: #ff6685;
+      background: var(--danger);
     }
-
-    .light:nth-child(2) { background: #ffcf64; }
+    .light:nth-child(2) { background: #ffd56b; }
     .light:nth-child(3) { background: var(--nvidia); }
-    .stage-title { margin-left: 8px; }
 
-    .flow-map {
+    .log {
       position: relative;
-      min-height: 332px;
-      padding: 20px;
-    }
-
-    .agent-core {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 176px;
-      height: 176px;
-      transform: translate(-50%, -50%);
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle, rgba(55,231,189,.2), rgba(55,231,189,.035) 58%, transparent 60%),
-        rgba(7, 10, 14, .82);
-      border: 1px solid rgba(55,231,189,.36);
-      box-shadow:
-        0 0 80px rgba(55,231,189,.17),
-        inset 0 0 44px rgba(55,231,189,.1);
-    }
-
-    .agent-core:before,
-    .agent-core:after {
-      content: "";
-      position: absolute;
-      border-radius: 50%;
-      border: 1px solid rgba(55,231,189,.24);
-      inset: -18px;
-      animation: pulseRing 2.7s ease-in-out infinite;
-    }
-
-    .agent-core:after {
-      inset: -38px;
-      border-color: rgba(139,92,246,.22);
-      animation-delay: .65s;
-    }
-
-    @keyframes pulseRing {
-      0%, 100% { opacity: .35; transform: scale(.96); }
-      50% { opacity: .9; transform: scale(1.04); }
-    }
-
-    .core-face {
-      width: 116px;
-      height: 116px;
-      border-radius: 34px;
-      display: block;
-      object-fit: cover;
-      box-shadow:
-        0 0 36px rgba(55,231,189,.36),
-        0 0 72px rgba(139,92,246,.18);
-      animation: coreBreath 3.6s ease-in-out infinite;
-    }
-
-    @keyframes coreBreath {
-      0%, 100% { transform: scale(1); filter: saturate(1.05) brightness(1); }
-      50% { transform: scale(1.045); filter: saturate(1.35) brightness(1.16); }
-    }
-
-    .orbit {
-      position: absolute;
-      inset: -18px;
-      border-radius: 50%;
-      animation: orbit 9s linear infinite;
-    }
-
-    .orbit i {
-      position: absolute;
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--safe);
-      box-shadow: 0 0 16px var(--safe);
-    }
-
-    .orbit i:nth-child(1) { top: 7px; left: 50%; }
-    .orbit i:nth-child(2) { right: 22px; bottom: 34px; background: var(--stripe); box-shadow: 0 0 16px var(--stripe); }
-    .orbit i:nth-child(3) { left: 20px; bottom: 38px; background: var(--hermes); box-shadow: 0 0 16px var(--hermes); }
-
-    @keyframes orbit { to { transform: rotate(360deg); } }
-
-    .brand-satellite {
-      position: absolute;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      min-height: 28px;
-      border: 1px solid var(--line2);
-      border-radius: 999px;
-      padding: 0 10px;
-      background: rgba(5, 8, 12, .78);
+      height: 148px;
+      padding: 14px 16px;
       font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      box-shadow: 0 12px 28px rgba(0,0,0,.22);
-      animation: satelliteDrift 5.8s ease-in-out infinite;
-      z-index: 2;
+      font-size: 12px;
+      line-height: 1.7;
+      color: #9ca9ba;
     }
 
-    .brand-satellite:before {
-      content: "";
-      display: none;
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: currentColor;
-      box-shadow: 0 0 14px currentColor;
-    }
-
-    .brand-satellite img {
-      width: 20px;
-      height: 20px;
-      border-radius: 6px;
-      object-fit: cover;
-      box-shadow: 0 0 16px rgba(255,255,255,.14);
-    }
-
-    .sat-stripe {
-      left: 245px;
-      top: 44px;
-      color: #c9b8ff;
-      border-color: rgba(139,92,246,.35);
-      animation-delay: -.6s;
-    }
-
-    .sat-hermes {
-      right: 246px;
-      top: 76px;
-      color: #ffe1a0;
-      border-color: rgba(240,200,106,.38);
-      animation-delay: -2s;
-    }
-
-    .sat-nvidia {
-      right: 220px;
-      bottom: 46px;
-      color: #b9f16d;
-      border-color: rgba(118,185,0,.45);
-      animation-delay: -3.3s;
-    }
-
-    @keyframes satelliteDrift {
-      0%, 100% { transform: translate3d(0, 0, 0); }
-      50% { transform: translate3d(8px, -7px, 0); }
-    }
-
-    .node {
-      position: absolute;
-      width: 188px;
-      border: 1px solid var(--line2);
-      border-radius: 13px;
-      background: rgba(13, 18, 26, .88);
-      box-shadow: 0 16px 44px rgba(0,0,0,.3);
-      padding: 13px;
-      overflow: hidden;
-      animation: nodeFloat 6.4s ease-in-out infinite;
-    }
-
-    .node.hermes { animation-delay: -1.6s; }
-    .node.nemotron { animation-delay: -3s; }
-    .node.human { animation-delay: -4.5s; }
-
-    @keyframes nodeFloat {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-7px); }
-    }
-
-    .node:before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.13), transparent);
-      animation: nodeSweep 5.2s ease-in-out infinite;
-    }
-
-    @keyframes nodeSweep {
-      0%, 42%, 100% { transform: translateX(-100%); opacity: 0; }
-      52% { opacity: 1; }
-      68% { transform: translateX(100%); opacity: 0; }
-    }
-
-    .node b {
-      display: flex;
-      align-items: center;
+    .log-line {
+      display: grid;
+      grid-template-columns: 78px 1fr;
       gap: 8px;
-      font-size: 13px;
-      line-height: 1.1;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: logIn 12s linear infinite;
     }
 
-    .node .brand-title {
-      display: block;
-      margin-top: 3px;
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
+    .log-line:nth-child(1) { animation-delay: 0s; }
+    .log-line:nth-child(2) { animation-delay: 1.6s; }
+    .log-line:nth-child(3) { animation-delay: 3.2s; }
+    .log-line:nth-child(4) { animation-delay: 4.8s; }
+    .log-line:nth-child(5) { animation-delay: 6.4s; }
+    .log-line:nth-child(6) { animation-delay: 8s; }
+
+    .tag {
+      font-weight: 950;
+      color: currentColor;
     }
 
-    .node small {
-      display: block;
-      margin-top: 8px;
-      color: var(--faint);
-      font-family: var(--mono);
-      font-size: 10px;
-      line-height: 1.45;
-    }
+    .tag.st { color: var(--stripe); }
+    .tag.hm { color: var(--hermes); }
+    .tag.nv { color: var(--nvidia); }
+    .tag.hu { color: var(--human); }
+    .tag.ok { color: var(--solvent); }
 
-    .logo-mark {
-      display: block;
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      object-fit: cover;
-      background: rgba(255,255,255,.08);
-      box-shadow: 0 0 18px rgba(255,255,255,.12);
-      flex: none;
-    }
-
-    .logo-human {
-      object-position: 50% 38%;
-      border: 1px solid rgba(55,231,189,.6);
-      box-shadow: 0 0 20px rgba(55,231,189,.22);
-    }
-
-    .node.invoice { left: 22px; top: 36px; border-color: rgba(139,92,246,.35); }
-    .node.hermes { right: 24px; top: 46px; border-color: rgba(240,200,106,.38); }
-    .node.nemotron { right: 36px; bottom: 44px; border-color: rgba(118,185,0,.42); }
-    .node.human { left: 38px; bottom: 42px; border-color: rgba(55,231,189,.4); }
-
-    .scan-beam {
+    .caption {
       position: absolute;
-      right: 96px;
-      bottom: 112px;
-      width: 210px;
-      height: 82px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, transparent, rgba(118,185,0,.22), rgba(55,231,189,.34), transparent);
-      filter: blur(2px);
-      opacity: .34;
-      transform: rotate(-18deg);
-      animation: scanBeam 3.9s ease-in-out infinite;
-      pointer-events: none;
-    }
-
-    @keyframes scanBeam {
-      0%, 100% { transform: translateX(0) rotate(-18deg); opacity: .16; }
-      45% { transform: translateX(-46px) rotate(-18deg); opacity: .48; }
-      70% { transform: translateX(-92px) rotate(-18deg); opacity: .18; }
-    }
-
-    .wire {
-      position: absolute;
-      height: 2px;
-      transform-origin: left center;
-      background: linear-gradient(90deg, transparent, rgba(55,231,189,.34), transparent);
-      overflow: hidden;
-    }
-
-    .wire:after {
-      content: "";
-      position: absolute;
+      right: 0;
       top: 0;
-      width: 70px;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--safe), transparent);
-      animation: packet 2.4s linear infinite;
-    }
-
-    .w1 { left: 184px; top: 132px; width: 128px; transform: rotate(17deg); }
-    .w2 { right: 184px; top: 138px; width: 118px; transform: rotate(158deg); }
-    .w3 { right: 188px; bottom: 112px; width: 118px; transform: rotate(202deg); }
-    .w4 { left: 196px; bottom: 114px; width: 118px; transform: rotate(-24deg); }
-
-    @keyframes packet {
-      from { transform: translateX(-80px); }
-      to { transform: translateX(220px); }
-    }
-
-    .event-rail {
-      border-top: 1px solid var(--line);
-      padding: 14px 16px 16px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      background: rgba(0,0,0,.18);
-    }
-
-    .draft {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: rgba(0,0,0,.24);
-      padding: 14px;
-      min-width: 0;
-    }
-
-    .draft-label {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      color: var(--faint);
-      font-family: var(--mono);
-      font-size: 10px;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
-
-    .draft-label span:last-child { color: var(--safe); }
-
-    .draft-label span:last-child,
-    #approvalState {
-      animation: labelPulse 2.2s ease-in-out infinite;
-    }
-
-    @keyframes labelPulse {
-      0%, 100% { text-shadow: 0 0 0 transparent; }
-      50% { text-shadow: 0 0 18px currentColor; }
-    }
-
-    .draft p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 12.5px;
-      line-height: 1.65;
-    }
-
-    .type-line:after {
-      content: "";
-      display: inline-block;
-      width: 7px;
-      height: 14px;
-      margin-left: 3px;
-      vertical-align: -2px;
-      background: var(--safe);
-      animation: blink 1s steps(1) infinite;
-    }
-
-    @keyframes blink { 50% { opacity: 0; } }
-
-    .approval {
-      border: 1px solid rgba(55,231,189,.26);
-      border-radius: 12px;
-      background:
-        linear-gradient(180deg, rgba(55,231,189,.075), rgba(0,0,0,.22));
-      padding: 14px;
-      min-width: 0;
-    }
-
-    .operator-line {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 12px;
+      z-index: 20;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 999px;
+      background: rgba(6, 9, 14, .7);
       color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .caption span {
+      color: var(--solvent);
+    }
+
+    @keyframes dotBeat {
+      50% { transform: scale(1.7); opacity: .6; }
+    }
+
+    @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+    @keyframes spinReverse { to { transform: translate(-50%, -50%) rotate(-360deg); } }
+    @keyframes scanRotate { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+    @keyframes flow {
+      to { stroke-dashoffset: -430; }
+    }
+
+    @keyframes coreFloat {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-8px) scale(1.025); }
+    }
+
+    @keyframes corePing {
+      0% { opacity: .65; transform: scale(.92); }
+      100% { opacity: 0; transform: scale(1.22); }
+    }
+
+    @keyframes nodeFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes packetInvoice {
+      0% { left: 10%; top: 46%; opacity: 0; transform: scale(.8); }
+      10%, 35% { opacity: 1; }
+      30% { left: 42%; top: 48%; transform: scale(1); }
+      52% { left: 64%; top: 28%; }
+      84% { left: 72%; top: 65%; opacity: 1; }
+      100% { left: 48%; top: 50%; opacity: 0; transform: scale(.75); }
+    }
+
+    @keyframes packetPrompt {
+      0% { left: 70%; top: 24%; opacity: 0; transform: scale(.8); }
+      10%, 42% { opacity: 1; }
+      35% { left: 51%; top: 50%; transform: scale(1); }
+      64% { left: 74%; top: 66%; }
+      100% { left: 20%; top: 70%; opacity: 0; transform: scale(.75); }
+    }
+
+    @keyframes packetScan {
+      0% { left: 76%; top: 67%; opacity: 0; transform: scale(.8); }
+      10%, 52% { opacity: 1; }
+      34% { left: 53%; top: 52%; transform: scale(1); }
+      64% { left: 26%; top: 69%; }
+      100% { left: 13%; top: 48%; opacity: 0; transform: scale(.75); }
+    }
+
+    @keyframes packetPaid {
+      0% { left: 22%; top: 71%; opacity: 0; transform: scale(.8); }
+      12%, 54% { opacity: 1; }
+      38% { left: 49%; top: 52%; transform: scale(1); }
+      68% { left: 14%; top: 45%; }
+      100% { left: 10%; top: 45%; opacity: 0; transform: scale(.75); }
+    }
+
+    @keyframes logIn {
+      0%, 10% { opacity: 0; transform: translateY(8px); }
+      14%, 78% { opacity: 1; transform: translateY(0); }
+      88%, 100% { opacity: 0; transform: translateY(-5px); }
+    }
+
+    .site-section {
+      position: relative;
+      z-index: 12;
+      padding: 100px 30px;
+      background:
+        linear-gradient(180deg, rgba(2,4,7,.05), rgba(2,4,7,.88)),
+        linear-gradient(90deg, rgba(118,185,0,.08), transparent 35%, rgba(99,91,255,.08));
+    }
+
+    .section-inner {
+      width: min(1280px, calc(100vw - 60px));
+      margin: 0 auto;
+    }
+
+    .section-kicker {
+      color: var(--solvent);
+      font-family: var(--mono);
       font-size: 12px;
+      font-weight: 950;
+      letter-spacing: .18em;
+      text-transform: uppercase;
     }
 
-    .operator-line img {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      object-fit: cover;
-      object-position: 50% 36%;
-      border: 1px solid rgba(55,231,189,.42);
-      box-shadow: 0 0 18px rgba(55,231,189,.18);
-      flex: none;
+    .section-title {
+      margin: 14px 0 0;
+      max-width: 860px;
+      font-size: clamp(42px, 4.4vw, 72px);
+      line-height: .95;
+      letter-spacing: 0;
+      text-transform: uppercase;
     }
 
-    .operator-line b {
-      display: block;
-      color: var(--text);
-      line-height: 1.15;
+    .section-lede {
+      margin: 20px 0 0;
+      max-width: 760px;
+      color: #aebacc;
+      font-size: 19px;
+      line-height: 1.65;
     }
 
-    .operator-line span {
+    .workflow-strip {
+      margin-top: 44px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(7, 11, 17, .74);
+      box-shadow: 0 28px 80px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    .workflow-step {
+      min-height: 210px;
+      padding: 24px 22px;
+      border-right: 1px solid rgba(255,255,255,.1);
+    }
+
+    .workflow-step:last-child { border-right: 0; }
+
+    .workflow-step small {
       display: block;
       color: var(--faint);
       font-family: var(--mono);
-      font-size: 10px;
-      margin-top: 2px;
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: .16em;
       text-transform: uppercase;
-      letter-spacing: .08em;
     }
 
-    .approval-top {
+    .workflow-step b {
+      display: block;
+      margin-top: 18px;
+      font-size: 24px;
+      line-height: 1.05;
+    }
+
+    .workflow-step p {
+      margin: 16px 0 0;
+      color: #94a3b8;
+      line-height: 1.55;
+    }
+
+    .workflow-step i {
+      display: block;
+      width: 42px;
+      height: 3px;
+      margin-top: 24px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 24px currentColor;
+    }
+
+    .workflow-step.stripe { color: var(--stripe); }
+    .workflow-step.hermes { color: var(--hermes); }
+    .workflow-step.nvidia { color: var(--nvidia); }
+    .workflow-step.human { color: var(--human); }
+    .workflow-step.solvent { color: var(--solvent); }
+
+    .run-grid {
+      margin-top: 44px;
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .run-panel,
+    .command-panel,
+    .contact-panel {
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      background: rgba(7, 11, 17, .78);
+      box-shadow: 0 28px 80px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    .run-panel {
+      padding: 28px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .run-card {
+      display: grid;
+      grid-template-columns: 46px 1fr auto;
+      gap: 14px;
+      align-items: center;
+      min-height: 82px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 8px;
+      background: rgba(10, 16, 24, .72);
+    }
+
+    .run-card img {
+      width: 46px;
+      height: 46px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: rgba(255,255,255,.92);
+    }
+
+    .run-card b { display: block; font-size: 18px; }
+
+    .run-card span {
+      display: block;
+      margin-top: 4px;
+      color: #91a0b3;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .status-pill {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(55,231,189,.1);
+      color: var(--solvent);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 950;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .command-panel {
+      padding: 28px;
+      font-family: var(--mono);
+    }
+
+    .command-panel .prompt { color: var(--solvent); font-weight: 950; }
+
+    .command-stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    .cmd-line {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      min-height: 46px;
+      padding: 0 8px 0 0;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: #a9b7ca;
+      background: transparent;
+      transition: background .22s ease, border-color .22s ease, box-shadow .22s ease, transform .22s ease;
+    }
+
+    .cmd-line code {
+      display: block;
+      padding: 10px 0;
+      white-space: nowrap;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+
+    .copy-cmd {
+      min-width: 76px;
+      height: 32px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 7px;
+      background: rgba(14, 21, 31, .72);
+      color: #dce6f4;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 950;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      opacity: .72;
+      transform: translateX(0);
+      transition: opacity .2s ease, transform .2s ease, border-color .2s ease, color .2s ease;
+    }
+
+    .cmd-line:hover,
+    .cmd-line.copied {
+      background: rgba(55,231,189,.055);
+      border-color: rgba(55,231,189,.18);
+      box-shadow: 0 0 34px rgba(55,231,189,.08);
+    }
+
+    .cmd-line:hover .copy-cmd,
+    .cmd-line.copied .copy-cmd {
+      opacity: 1;
+    }
+
+    .cmd-line.copied {
+      transform: translateY(-1px);
+    }
+
+    .cmd-line.copied .copy-cmd {
+      color: var(--solvent);
+      border-color: rgba(55,231,189,.42);
+    }
+
+    .doc-links {
+      display: grid;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .doc-links a {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 18px;
+      min-height: 64px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 8px;
+      background: rgba(10, 16, 24, .52);
+      color: #dce6f4;
+      font-weight: 850;
+      transition: transform .2s ease, border-color .2s ease, background .2s ease;
     }
 
-    .approval-top b { font-size: 14px; }
+    .doc-links a:hover {
+      transform: translateX(3px);
+      border-color: rgba(55,231,189,.3);
+      background: rgba(55,231,189,.06);
+    }
 
-    .approval-top span {
-      color: var(--warn);
+    .doc-links small {
+      display: block;
+      margin-top: 4px;
+      color: #7f8da0;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .doc-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 11px;
+      border: 1px solid rgba(55,231,189,.2);
+      border-radius: 999px;
+      background: rgba(55,231,189,.08);
+      color: var(--solvent);
       font-family: var(--mono);
       font-size: 10px;
+      font-weight: 950;
+      letter-spacing: .12em;
       text-transform: uppercase;
-      letter-spacing: .1em;
+      white-space: nowrap;
     }
 
-    .approval-buttons {
+    .doc-action svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    .contact-panel {
+      margin-top: 44px;
+      padding: 28px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 9px;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
     }
 
-    .approval-buttons button {
-      height: 40px;
-      border: 1px solid var(--line2);
-      border-radius: 9px;
-      color: var(--text);
-      background: rgba(255,255,255,.045);
-      font-weight: 850;
+    .contact-panel p {
+      margin: 8px 0 0;
+      max-width: 760px;
+      color: #9ca9ba;
+      line-height: 1.6;
+    }
+
+    .contact-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .contact-actions a,
+    .hero-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 0 18px;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 8px;
+      background: rgba(14, 21, 31, .78);
+      color: #f2f6fb;
+      font-weight: 900;
+      font-family: var(--sans);
       cursor: pointer;
     }
 
-    .approval-buttons button:first-child {
-      border-color: transparent;
-      color: var(--ink);
-      background: linear-gradient(135deg, var(--safe), var(--nvidia));
+    button.hero-action {
+      appearance: none;
     }
 
-    .mobile-agent {
-      display: none;
+    .contact-actions svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .contact-actions a.primary,
+    .hero-action.primary {
+      border-color: transparent;
+      color: #021009;
+      background: linear-gradient(135deg, #42e297, #77d900);
     }
 
     .demo-modal {
       position: fixed;
       inset: 0;
-      z-index: 60;
+      z-index: 90;
       display: none;
       align-items: center;
       justify-content: center;
@@ -821,13 +1100,13 @@
     }
 
     .demo-console {
-      width: min(920px, 100%);
-      max-height: min(760px, calc(100vh - 52px));
-      border: 1px solid var(--line2);
+      width: min(960px, 100%);
+      max-height: min(780px, calc(100vh - 52px));
+      border: 1px solid rgba(255,255,255,.14);
       border-radius: 18px;
       background:
-        radial-gradient(circle at 24% 0%, rgba(139,92,246,.12), transparent 28%),
-        radial-gradient(circle at 78% 16%, rgba(118,185,0,.12), transparent 34%),
+        radial-gradient(circle at 24% 0%, rgba(99,91,255,.14), transparent 28%),
+        radial-gradient(circle at 78% 16%, rgba(118,185,0,.14), transparent 34%),
         rgba(5, 8, 12, .96);
       box-shadow: 0 34px 110px rgba(0,0,0,.64);
       overflow: hidden;
@@ -839,7 +1118,7 @@
       align-items: center;
       gap: 12px;
       padding: 0 18px;
-      border-bottom: 1px solid var(--line);
+      border-bottom: 1px solid rgba(255,255,255,.1);
       color: var(--faint);
       font-family: var(--mono);
       font-size: 12px;
@@ -856,7 +1135,7 @@
       margin-left: auto;
       width: 34px;
       height: 34px;
-      border: 1px solid var(--line);
+      border: 1px solid rgba(255,255,255,.12);
       border-radius: 9px;
       color: var(--muted);
       background: rgba(255,255,255,.04);
@@ -864,15 +1143,9 @@
       font-weight: 900;
     }
 
-    .demo-close:hover {
-      color: var(--text);
-      border-color: var(--line2);
-    }
-
     .demo-body {
       display: grid;
       grid-template-columns: 1fr 270px;
-      gap: 0;
       min-height: 470px;
     }
 
@@ -881,10 +1154,18 @@
       min-height: 470px;
       max-height: 590px;
       overflow: auto;
-      border-right: 1px solid var(--line);
+      border-right: 1px solid rgba(255,255,255,.1);
       font-family: var(--mono);
       font-size: 12.5px;
       line-height: 1.65;
+    }
+
+    .run-panel .demo-log {
+      min-height: 360px;
+      max-height: 420px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px;
+      background: rgba(3, 6, 10, .78);
     }
 
     .demo-log-line {
@@ -895,23 +1176,16 @@
       padding: 7px 0;
       opacity: 0;
       transform: translateY(6px);
-      animation: logIn .24s ease-out forwards;
+      animation: demoLineIn .24s ease-out forwards;
     }
 
-    .demo-log-line .stamp {
-      color: var(--faint);
-    }
-
-    .demo-log-line .msg b {
-      color: var(--text);
-      font-weight: 800;
-    }
-
-    .demo-log-line.safe .msg { color: var(--safe); }
-    .demo-log-line.warn .msg { color: var(--warn); }
+    .demo-log-line .stamp { color: var(--faint); }
+    .demo-log-line .msg b { color: var(--text); font-weight: 850; }
+    .demo-log-line.safe .msg { color: var(--solvent); }
+    .demo-log-line.warn .msg { color: #ffd56b; }
     .demo-log-line.pay .msg { color: #c9b8ff; }
 
-    @keyframes logIn {
+    @keyframes demoLineIn {
       to { opacity: 1; transform: translateY(0); }
     }
 
@@ -923,7 +1197,7 @@
     }
 
     .demo-status-card {
-      border: 1px solid var(--line);
+      border: 1px solid rgba(255,255,255,.1);
       border-radius: 12px;
       background: rgba(255,255,255,.035);
       padding: 14px;
@@ -956,7 +1230,7 @@
       width: 0%;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, var(--safe), var(--nvidia), var(--stripe2));
+      background: linear-gradient(90deg, var(--solvent), var(--nvidia), var(--stripe));
       transition: width .28s ease;
     }
 
@@ -964,513 +1238,158 @@
       height: 42px;
       border: 1px solid rgba(55,231,189,.28);
       border-radius: 10px;
-      color: var(--ink);
-      background: linear-gradient(135deg, var(--safe), var(--nvidia));
+      color: #021009;
+      background: linear-gradient(135deg, var(--solvent), var(--nvidia));
       font-weight: 900;
       cursor: pointer;
     }
 
-    .contact-dock {
-      position: fixed;
-      right: 18px;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 25;
-      display: grid;
-      justify-items: center;
-      gap: 10px;
-      padding: 12px 10px;
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 18px;
-      background:
-        linear-gradient(180deg, rgba(18, 24, 32, .82), rgba(6, 8, 12, .74)),
-        radial-gradient(circle at 50% 0%, rgba(55,231,189,.12), transparent 58%);
-      backdrop-filter: blur(18px);
-      box-shadow: 0 20px 60px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.06);
-    }
+    @media (max-width: 980px) {
+      body { overflow: auto; }
 
-    .contact-dock:before {
-      content: "";
-      position: absolute;
-      inset: 8px;
-      border-radius: 14px;
-      pointer-events: none;
-      background: linear-gradient(180deg, rgba(55,231,189,.16), rgba(139,92,246,.14));
-      opacity: .16;
-      filter: blur(16px);
-    }
-
-    .dock-label {
-      position: relative;
-      writing-mode: vertical-rl;
-      transform: rotate(180deg);
-      color: var(--faint);
-      font-family: var(--mono);
-      font-size: 9px;
-      font-weight: 900;
-      letter-spacing: .24em;
-      line-height: 1;
-      text-transform: uppercase;
-    }
-
-    .dock-links {
-      position: relative;
-      display: grid;
-      gap: 8px;
-    }
-
-    .dock-link {
-      width: 42px;
-      height: 42px;
-      border-radius: 13px;
-      display: grid;
-      place-items: center;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.045);
-      color: var(--text);
-      transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
-    }
-
-    .dock-link svg {
-      width: 19px;
-      height: 19px;
-      display: block;
-      fill: currentColor;
-    }
-
-    .dock-link:hover {
-      transform: translateX(-3px);
-      border-color: rgba(55,231,189,.48);
-      background: rgba(55,231,189,.09);
-      box-shadow: 0 0 26px rgba(55,231,189,.16);
-    }
-
-    .dock-link.x { color: #f3f7fb; }
-    .dock-link.gh { color: #c9b8ff; }
-    .dock-link.tg { color: #36c5f0; }
-
-    .section {
-      border-top: 1px solid var(--line);
-      padding: 88px 0;
-      background: rgba(4, 5, 7, .38);
-      scroll-margin-top: 86px;
-    }
-
-    .section-head {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 32px;
-      margin-bottom: 32px;
-    }
-
-    .eyebrow {
-      margin-bottom: 13px;
-      color: var(--safe);
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-    }
-
-    h2 {
-      margin: 0;
-      max-width: 690px;
-      font-size: clamp(30px, 4.5vw, 56px);
-      line-height: 1;
-      letter-spacing: -.04em;
-    }
-
-    .section-copy {
-      margin: 0;
-      max-width: 430px;
-      color: var(--muted);
-      font-size: 16px;
-      line-height: 1.65;
-    }
-
-    .story-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .story-card {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: rgba(16, 22, 30, .68);
-      padding: 24px;
-      min-height: 244px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .story-card:before {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 0;
-      height: 2px;
-      background: var(--accent);
-      opacity: .85;
-    }
-
-    .story-card:nth-child(1) { --accent: var(--stripe); }
-    .story-card:nth-child(2) { --accent: var(--hermes); }
-    .story-card:nth-child(3) { --accent: var(--nvidia); }
-
-    .story-card .num {
-      color: var(--accent);
-      font-family: var(--mono);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: .12em;
-      margin-bottom: 28px;
-      text-transform: uppercase;
-    }
-
-    .story-card h3 {
-      margin: 0 0 11px;
-      font-size: 22px;
-      letter-spacing: -.015em;
-    }
-
-    .story-card p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.65;
-    }
-
-    .movie-strip {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      overflow: hidden;
-      background: rgba(16,22,30,.7);
-    }
-
-    .frame {
-      min-height: 260px;
-      padding: 22px;
-      border-right: 1px solid var(--line);
-      position: relative;
-    }
-
-    .frame:last-child { border-right: 0; }
-
-    .frame .time {
-      color: var(--faint);
-      font-family: var(--mono);
-      font-size: 11px;
-      margin-bottom: 48px;
-    }
-
-    .frame h3 {
-      margin: 0 0 10px;
-      font-size: 18px;
-    }
-
-    .frame p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.62;
-    }
-
-    .frame:after {
-      content: "";
-      position: absolute;
-      left: 22px;
-      bottom: 22px;
-      width: 42px;
-      height: 3px;
-      border-radius: 99px;
-      background: var(--frame-color);
-      box-shadow: 0 0 18px var(--frame-color);
-    }
-
-    .frame:nth-child(1) { --frame-color: var(--stripe); }
-    .frame:nth-child(2) { --frame-color: var(--hermes); }
-    .frame:nth-child(3) { --frame-color: var(--nvidia); }
-    .frame:nth-child(4) { --frame-color: var(--safe); }
-    .frame:nth-child(5) { --frame-color: var(--stripe2); }
-
-    .run-panel {
-      display: grid;
-      grid-template-columns: .95fr 1.05fr;
-      gap: 18px;
-      align-items: stretch;
-    }
-
-    .terminal {
-      border: 1px solid var(--line2);
-      border-radius: 12px;
-      background:
-        radial-gradient(circle at 20% 0%, rgba(55,231,189,.08), transparent 34%),
-        #05080c;
-      overflow: hidden;
-      box-shadow: 0 24px 80px rgba(0,0,0,.28);
-    }
-
-    .terminal-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      min-height: 48px;
-      padding: 0 16px;
-      border-bottom: 1px solid var(--line);
-      color: var(--faint);
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-    }
-
-    .copy-all {
-      border: 1px solid rgba(55,231,189,.28);
-      border-radius: 999px;
-      color: var(--safe);
-      background: rgba(55,231,189,.065);
-      padding: 7px 11px;
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      cursor: pointer;
-    }
-
-    .command-stack {
-      display: grid;
-      gap: 10px;
-      padding: 16px;
-    }
-
-    .cmd-line {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: 11px;
-      min-height: 48px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: rgba(255,255,255,.035);
-      padding: 10px 10px 10px 14px;
-      position: relative;
-      overflow: hidden;
-      transition: border-color .2s ease, background .2s ease, transform .2s ease;
-    }
-
-    .cmd-line:before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(55,231,189,.18), transparent);
-      transform: translateX(-120%);
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .cmd-line:hover {
-      border-color: rgba(55,231,189,.34);
-      background: rgba(55,231,189,.045);
-    }
-
-    .cmd-line.copied {
-      border-color: rgba(55,231,189,.72);
-      background: rgba(55,231,189,.095);
-      transform: translateY(-1px);
-    }
-
-    .cmd-line.copied:before {
-      animation: copySweep .72s ease-out;
-    }
-
-    @keyframes copySweep {
-      0% { transform: translateX(-120%); opacity: 0; }
-      30% { opacity: 1; }
-      100% { transform: translateX(120%); opacity: 0; }
-    }
-
-    .cmd-step {
-      width: 22px;
-      height: 22px;
-      border-radius: 7px;
-      display: grid;
-      place-items: center;
-      color: var(--ink);
-      background: linear-gradient(135deg, var(--safe), var(--nvidia));
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 900;
-      box-shadow: 0 0 18px rgba(55,231,189,.18);
-    }
-
-    .cmd-line code {
-      color: var(--muted);
-      font-family: var(--mono);
-      font-size: 13px;
-      white-space: nowrap;
-      overflow-wrap: anywhere;
-      overflow-x: auto;
-    }
-
-    .prompt { color: var(--safe); }
-
-    .copy-cmd {
-      min-width: 70px;
-      height: 30px;
-      border: 1px solid var(--line2);
-      border-radius: 8px;
-      color: var(--text);
-      background: rgba(255,255,255,.045);
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      cursor: pointer;
-      transition: border-color .18s ease, color .18s ease, background .18s ease;
-    }
-
-    .copy-cmd:hover {
-      color: var(--safe);
-      border-color: rgba(55,231,189,.45);
-      background: rgba(55,231,189,.08);
-    }
-
-    .links {
-      display: grid;
-      gap: 10px;
-    }
-
-    .doc-link {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: rgba(16,22,30,.7);
-      padding: 18px;
-      transition: transform .18s ease, border-color .18s ease;
-    }
-
-    .doc-link:hover {
-      transform: translateY(-2px);
-      border-color: rgba(55,231,189,.45);
-    }
-
-    .doc-link b {
-      display: block;
-      margin-bottom: 4px;
-    }
-
-    .doc-link span span {
-      display: block;
-      color: var(--faint);
-      font-size: 13px;
-    }
-
-    .arrow {
-      color: var(--safe);
-      font-family: var(--mono);
-      font-weight: 900;
-    }
-
-    footer {
-      border-top: 1px solid var(--line);
-      padding: 36px 0 54px;
-      color: var(--faint);
-      font-size: 13px;
-    }
-
-    .footer-brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      min-width: 0;
-    }
-
-    .footer-brand img {
-      width: 74px;
-      height: 74px;
-      border-radius: 16px;
-      object-fit: cover;
-      box-shadow: 0 0 34px rgba(55,231,189,.18);
-      flex: none;
-    }
-
-    .footer-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 20px;
-    }
-
-    .social {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .social a {
-      border: 1px solid var(--line);
-      border-radius: 9px;
-      padding: 9px 12px;
-      color: var(--muted);
-      font-weight: 800;
-    }
-
-    .social a:hover {
-      color: var(--text);
-      border-color: var(--line2);
-    }
-
-    @media (max-width: 1060px) {
-      .hero {
-        grid-template-columns: 1fr;
-        min-height: auto;
+      .topbar {
+        padding: 10px 14px;
       }
 
-      h1 { max-width: 12ch; }
-      .agent-stage { max-width: 720px; }
-      .story-grid, .run-panel { grid-template-columns: 1fr; }
-      .movie-strip { grid-template-columns: 1fr; }
-      .frame {
-        min-height: auto;
-        border-right: 0;
-        border-bottom: 1px solid var(--line);
+      .nav {
+        width: 100%;
+        height: 54px;
       }
-      .frame:last-child { border-bottom: 0; }
-      .frame .time { margin-bottom: 24px; }
-      .section-head { display: block; }
-      .section-copy { margin-top: 16px; }
+
+      .brand {
+        font-size: 14px;
+      }
+
+      .brand img {
+        width: 38px;
+        height: 38px;
+      }
+
+      .nav-links a:not(.nav-cta) {
+        display: none;
+      }
+
+      .nav-cta {
+        padding: 11px 13px;
+      }
+
       .contact-dock {
+        right: 50%;
         top: auto;
-        right: 14px;
         bottom: 14px;
-        transform: none;
+        transform: translateX(50%);
         grid-auto-flow: column;
-        align-items: center;
-        padding: 9px 10px;
-        border-radius: 18px;
+        grid-template-columns: repeat(3, 44px);
       }
 
-      .dock-label {
-        writing-mode: initial;
-        transform: none;
-        margin: 0 2px 0 4px;
+      .stage {
+        min-height: 1540px;
+        overflow: hidden;
+        padding-top: 92px;
       }
 
-      .dock-links {
-        grid-auto-flow: column;
+      .scene {
+        width: min(100% - 12px, 720px);
+        height: 1500px;
+      }
+
+      .hud {
+        width: 100%;
+      }
+
+      h1 {
+        font-size: 50px;
+      }
+
+      .reactor {
+        top: 560px;
+        right: 50%;
+        width: 720px;
+        max-width: 108vw;
+        transform: translate(50%, -50%) scale(.72);
+      }
+
+      .stats {
+        bottom: 0;
+        width: 100%;
+        grid-template-columns: 1fr;
+      }
+
+      .terminal {
+        left: 0;
+        right: auto;
+        top: 930px;
+        bottom: auto;
+        width: 100%;
+      }
+
+      .site-section {
+        padding: 72px 18px;
+      }
+
+      .section-inner {
+        width: 100%;
+      }
+
+      .section-title {
+        font-size: 40px;
+      }
+
+      .workflow-strip,
+      .run-grid,
+      .contact-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .workflow-step {
+        min-height: 0;
+        border-right: 0;
+        border-bottom: 1px solid rgba(255,255,255,.1);
+      }
+
+      .workflow-step:last-child {
+        border-bottom: 0;
+      }
+
+      .run-card {
+        grid-template-columns: 42px 1fr;
+      }
+
+      .run-card .hero-action {
+        grid-column: 1 / -1;
+      }
+
+      .cmd-line {
+        grid-template-columns: 1fr;
+        padding-right: 0;
+      }
+
+      .cmd-line code {
+        white-space: normal;
+      }
+
+      .copy-cmd {
+        justify-self: start;
+        margin-bottom: 10px;
+        opacity: 1;
+        transform: none;
+      }
+
+      .status-pill {
+        grid-column: 2;
+        justify-self: start;
+      }
+
+      .contact-panel {
+        padding-bottom: 84px;
+      }
+
+      .contact-actions {
+        justify-content: flex-start;
+      }
+
+      .demo-modal {
+        padding: 12px;
       }
 
       .demo-body {
@@ -1478,401 +1397,275 @@
       }
 
       .demo-log {
-        border-right: 0;
-        border-bottom: 1px solid var(--line);
         min-height: 360px;
-      }
-    }
-
-    @media (max-width: 720px) {
-      .wrap { width: min(100% - 28px, var(--max)); }
-      .navlinks a:not(.nav-cta) { display: none; }
-      .brand { letter-spacing: .12em; }
-      .hero { padding-top: 28px; gap: 28px; }
-      h1 { font-size: clamp(42px, 13vw, 56px); }
-      .lead { font-size: 16px; }
-      .hero-proof { grid-template-columns: 1fr; }
-      .agent-stage { display: none; }
-      .mobile-agent {
-        display: block;
-        border: 1px solid var(--line2);
-        border-radius: 15px;
-        background: linear-gradient(180deg, rgba(20,27,38,.88), rgba(7,10,15,.95));
-        box-shadow: var(--shadow);
-        overflow: hidden;
-      }
-
-      .mobile-agent .stage-top { height: 44px; }
-      .mobile-flow { padding: 14px; display: grid; gap: 10px; }
-      .mobile-step {
-        display: grid;
-        grid-template-columns: auto 1fr auto;
-        gap: 10px;
-        align-items: center;
-        border: 1px solid var(--line);
-        border-radius: 11px;
-        background: rgba(255,255,255,.035);
-        padding: 12px;
-      }
-
-      .mobile-step {
-        animation: nodeFloat 6s ease-in-out infinite;
-      }
-
-      .mobile-step:nth-child(2) { animation-delay: -1.5s; }
-      .mobile-step:nth-child(3) { animation-delay: -3s; }
-
-      .mobile-step b { font-size: 13px; }
-      .mobile-step span {
-        color: var(--faint);
-        font-family: var(--mono);
-        font-size: 10px;
-      }
-
-      .mobile-step em {
-        color: var(--safe);
-        font-family: var(--mono);
-        font-size: 10px;
-        font-style: normal;
-        text-transform: uppercase;
-      }
-
-      .mobile-approval {
-        border: 1px solid rgba(55,231,189,.26);
-        border-radius: 11px;
-        background: rgba(55,231,189,.07);
-        padding: 12px;
-      }
-
-      .operator-line img {
-        width: 32px;
-        height: 32px;
-      }
-
-      .contact-dock {
-        left: 14px;
-        right: 14px;
-        bottom: 12px;
-        width: max-content;
-        margin: 0 auto;
-      }
-
-      .demo-modal {
-        padding: 12px;
-      }
-
-      .demo-console {
-        max-height: calc(100vh - 24px);
+        max-height: 430px;
+        border-right: 0;
+        border-bottom: 1px solid rgba(255,255,255,.1);
       }
 
       .demo-log-line {
-        grid-template-columns: 1fr;
-        gap: 2px;
+        grid-template-columns: 74px 1fr;
+        font-size: 11px;
       }
 
-      .demo-status {
-        grid-template-columns: 1fr;
-      }
-
-      .mobile-approval p {
-        margin: 0 0 10px;
-        color: var(--muted);
-        font-size: 12.5px;
-        line-height: 1.55;
-      }
-
-      .event-rail { grid-template-columns: 1fr; }
-      .section { padding: 68px 0; }
-      .actions .btn { width: 100%; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *:before, *:after {
-        animation-duration: .01ms !important;
-        animation-iteration-count: 1 !important;
-        scroll-behavior: auto !important;
-      }
     }
   </style>
 </head>
 <body>
-  <aside class="contact-dock" aria-label="Creator contacts">
-    <span class="dock-label">Contact</span>
-    <div class="dock-links">
-      <a class="dock-link x" href="https://x.com/AlexKosa1" target="_blank" rel="noopener" aria-label="X profile">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2H21.6l-7.33 8.38L22.9 22h-6.76l-5.29-6.92L4.79 22H1.43l7.84-8.96L1 2h6.93l4.78 6.32L18.244 2Zm-1.18 17.95h1.86L6.91 3.94H4.91l12.154 16.01Z"/></svg>
-      </a>
-      <a class="dock-link gh" href="https://github.com/busminer" target="_blank" rel="noopener" aria-label="GitHub profile">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.1 3.29 9.4 7.86 10.93.58.1.79-.25.79-.56v-2.16c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.75 2.69 1.24 3.35.95.1-.74.4-1.24.73-1.53-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.16 1.18a10.96 10.96 0 0 1 5.76 0c2.19-1.49 3.15-1.18 3.15-1.18.63 1.59.24 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.43-2.7 5.41-5.27 5.7.42.36.79 1.07.79 2.16v3.15c0 .31.21.67.8.56A11.52 11.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
-      </a>
-      <a class="dock-link tg" href="https://t.me/Bitcoinbus" target="_blank" rel="noopener" aria-label="Telegram">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.9 4.27c.3-1.33-.86-1.85-1.9-1.45L2.72 9.48c-1.18.46-1.17 1.12-.2 1.42l4.43 1.38L17.2 5.8c.49-.29.93-.13.56.19l-8.3 7.5-.32 4.7c.47 0 .68-.22.94-.47l2.26-2.2 4.7 3.47c.87.48 1.49.23 1.7-.8L21.9 4.27Z"/></svg>
-      </a>
-    </div>
-  </aside>
-
   <header class="topbar">
-    <nav class="wrap nav" aria-label="Primary navigation">
-      <a class="brand" href="#top" aria-label="SOLVENT home"><img class="mark" src="assets/solvent-mark.png" alt="">SOLVENT</a>
-      <div class="navlinks">
+    <nav class="nav" aria-label="Main navigation">
+      <a class="brand" href="#top" aria-label="SOLVENT home"><img src="assets/solvent-mark.png" alt="">SOLVENT</a>
+      <div class="nav-links">
         <a href="#agent">Agent</a>
-        <a href="#demo-run">Demo</a>
-        <a href="#run">Run it</a>
+        <a href="#demo-run">Run it</a>
+        <a href="#contact">Contact</a>
         <a class="nav-cta" href="https://github.com/busminer/solvent" target="_blank" rel="noopener">View code</a>
       </div>
     </nav>
   </header>
 
-  <main id="top">
-    <section class="wrap hero">
-      <div>
-        <div class="kicker" aria-label="Integrations">
-          <span class="chip hm"><img src="assets/hermes-logo.png" alt=""> Nous Hermes</span>
-          <span class="chip nv"><img src="assets/nvidia-logo.png" alt=""> NVIDIA Nemotron Safety</span>
-          <span class="chip st"><img src="assets/stripe-logo.png" alt=""> Stripe</span>
-        </div>
-        <h1>An agent that gets invoices <span class="gradient-word">paid safely</span>.</h1>
-        <p class="lead">
-          SOLVENT turns overdue receivables into a controlled agent workflow: <b>read the Stripe invoice, choose the recovery move with Hermes, screen with NVIDIA Nemotron, and wait for one human tap before execution.</b>
+  <aside class="contact-dock" aria-label="Creator contacts">
+    <a class="dock-link" href="https://x.com/AlexKosa1" target="_blank" rel="noopener" aria-label="X profile">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2H21.6l-7.33 8.38L22.9 22h-6.76l-5.29-6.92L4.79 22H1.43l7.84-8.96L1 2h6.93l4.78 6.32L18.244 2Zm-1.18 17.95h1.86L6.91 3.94H4.91l12.154 16.01Z"/></svg>
+    </a>
+    <a class="dock-link" href="https://github.com/busminer" target="_blank" rel="noopener" aria-label="GitHub profile">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.1 3.29 9.4 7.86 10.93.58.1.79-.25.79-.56v-2.16c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.75 2.69 1.24 3.35.95.1-.74.4-1.24.73-1.53-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.16 1.18a10.96 10.96 0 0 1 5.76 0c2.19-1.49 3.15-1.18 3.15-1.18.63 1.59.24 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.43-2.7 5.41-5.27 5.7.42.36.79 1.07.79 2.16v3.15c0 .31.21.67.8.56A11.52 11.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+    </a>
+    <a class="dock-link" href="https://t.me/Bitcoinbus" target="_blank" rel="noopener" aria-label="Telegram">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.9 4.27c.3-1.33-.86-1.85-1.9-1.45L2.72 9.48c-1.18.46-1.17 1.12-.2 1.42l4.43 1.38L17.2 5.8c.49-.29.93-.13.56.19l-8.3 7.5-.32 4.7c.47 0 .68-.22.94-.47l2.26-2.2 4.7 3.47c.87.48 1.49.23 1.7-.8L21.9 4.27Z"/></svg>
+    </a>
+  </aside>
+
+  <main class="stage" id="top">
+    <section class="scene" aria-label="SOLVENT agent reactor visual test">
+      <div class="hud">
+        <div class="eyebrow"><span class="pulse-dot"></span>Agent operations loop</div>
+        <h1><span>AI receivables</span><span>control core</span></h1>
+        <p>
+          Stripe invoices become agent tasks. <strong>Hermes</strong> chooses the recovery move,
+          <strong>NVIDIA Nemotron</strong> scans the message and risk boundary, then a human tap releases execution.
         </p>
-        <div class="actions">
-          <button class="btn primary" type="button" id="runDemoBtn">Run the demo</button>
-          <button class="btn" type="button" id="copyBtn">Copy clone command</button>
-        </div>
-        <div class="hero-proof">
-          <div class="proof-card"><b>Human gate</b><span>No discount, escalation, or write-off ships alone.</span></div>
-          <div class="proof-card"><b>Safety scan</b><span>Nemotron blocks unsafe or uncertain messaging.</span></div>
-          <div class="proof-card"><b>Stripe ready</b><span>Payment links and settlement stay one tap away.</span></div>
+        <div class="hero-actions">
+          <button class="hero-action primary" type="button" id="runDemoBtn">Run the demo</button>
+          <a class="hero-action" href="https://github.com/busminer/solvent" target="_blank" rel="noopener">View code</a>
         </div>
       </div>
 
-      <aside class="agent-stage" aria-label="Animated SOLVENT agent workflow">
-        <img class="brand-watermark" src="assets/solvent-mark.png" alt="">
-        <div class="stage-top">
+      <div class="caption">live graph <span>safe / approved / paid</span></div>
+
+      <div class="reactor">
+        <div class="rings">
+          <div class="ring r1"></div>
+          <div class="ring r2"></div>
+          <div class="ring r3"></div>
+          <div class="ring r4"></div>
+        </div>
+
+        <div class="connectors">
+          <svg viewBox="0 0 760 760" aria-hidden="true">
+            <path class="connector" d="M116 388 C 235 360, 288 388, 380 380 S 522 259, 625 215" />
+            <path class="connector" d="M625 215 C 560 310, 496 328, 380 380 S 542 536, 622 575" />
+            <path class="connector" d="M622 575 C 495 536, 452 505, 380 380 S 229 548, 166 584" />
+            <path class="connector" d="M166 584 C 230 492, 278 451, 380 380 S 218 379, 116 388" />
+            <path class="flow invoice" d="M116 388 C 235 360, 288 388, 380 380 S 522 259, 625 215" />
+            <path class="flow reason" d="M625 215 C 560 310, 496 328, 380 380 S 542 536, 622 575" />
+            <path class="flow safety" d="M622 575 C 495 536, 452 505, 380 380 S 229 548, 166 584" />
+            <path class="flow approve" d="M166 584 C 230 492, 278 451, 380 380 S 218 379, 116 388" />
+          </svg>
+        </div>
+
+        <div class="scan-field"></div>
+
+        <article class="node stripe">
+          <div class="node-header"><img src="assets/stripe-logo.png" alt="">Stripe</div>
+          <em>invoice + payment link</em>
+          <p>#1051 Brightline Studio<br>$2,400 - 17 days overdue</p>
+        </article>
+
+        <article class="node hermes">
+          <div class="node-header"><img src="assets/hermes-logo.png" alt="">Nous Hermes</div>
+          <em>recovery decision</em>
+          <p>Chooses softest viable stage:<br>firm reminder, not escalation.</p>
+        </article>
+
+        <article class="node nemotron">
+          <div class="node-header"><img src="assets/nvidia-logo.png" alt="">NVIDIA Nemotron</div>
+          <em>AI safety scan</em>
+          <p>Classifies tone, pressure, policy risk.<br>Unsafe text cannot ship.</p>
+        </article>
+
+        <article class="node human">
+          <div class="node-header"><img src="assets/alex-pfp.png" alt="">Human gate</div>
+          <em>approval boundary</em>
+          <p>Irreversible actions pause<br>until explicit approval.</p>
+        </article>
+
+        <div class="packet invoice">invoice</div>
+        <div class="packet prompt">decision</div>
+        <div class="packet scan">scan</div>
+        <div class="packet paid">paid</div>
+
+        <div class="core">
+          <div class="core-shell">
+            <img src="assets/solvent-mark.png" alt="">
+            <div class="core-label">SOLVENT operator</div>
+          </div>
+        </div>
+      </div>
+
+      <section class="stats" aria-label="Agent run counters">
+        <div class="stat"><small>Tasks</small><b>05 / 05</b></div>
+        <div class="stat"><small>Safety</small><b>PASS</b></div>
+        <div class="stat"><small>Boundary</small><b>HELD</b></div>
+      </section>
+
+      <aside class="terminal" aria-label="Live agent trace">
+        <div class="terminal-top">
           <span class="light"></span><span class="light"></span><span class="light"></span>
-          <span class="stage-title">agent.run / receivables_recovery.live</span>
+          <span>agent.run / solvent_recovery.graph</span>
         </div>
-
-        <div class="flow-map">
-          <div class="wire w1"></div>
-          <div class="wire w2"></div>
-          <div class="wire w3"></div>
-          <div class="wire w4"></div>
-          <div class="scan-beam" aria-hidden="true"></div>
-          <div class="brand-satellite sat-stripe"><img src="assets/stripe-logo.png" alt="">Stripe skill</div>
-          <div class="brand-satellite sat-hermes"><img src="assets/hermes-logo.png" alt="">Hermes strategy</div>
-          <div class="brand-satellite sat-nvidia"><img src="assets/nvidia-logo.png" alt="">NVIDIA safety</div>
-
-          <div class="agent-core" aria-hidden="true">
-            <div class="orbit"><i></i><i></i><i></i></div>
-            <img class="core-face" src="assets/solvent-mark.png" alt="">
-          </div>
-
-          <div class="node invoice">
-            <b><img class="logo-mark" src="assets/stripe-logo.png" alt="">Stripe</b>
-            <span class="brand-title">Invoice + payment link</span>
-            <small>#1051 - Brightline Studio<br>$2,400 - 17 days overdue</small>
-          </div>
-
-          <div class="node hermes">
-            <b><img class="logo-mark" src="assets/hermes-logo.png" alt="">Nous Hermes</b>
-            <span class="brand-title">Recovery strategy</span>
-            <small>Chooses the softest recovery stage likely to work.</small>
-          </div>
-
-          <div class="node nemotron">
-            <b><img class="logo-mark" src="assets/nvidia-logo.png" alt="">NVIDIA Nemotron</b>
-            <span class="brand-title">Content safety scan</span>
-            <small>Classifies tone, pressure, and customer risk before send.</small>
-          </div>
-
-          <div class="node human">
-            <b><img class="logo-mark logo-human" src="assets/alex-pfp.png" alt="">Human gate</b>
-            <span class="brand-title">Approval boundary</span>
-            <small>Irreversible action is paused until approve or hold.</small>
-          </div>
-        </div>
-
-        <div class="event-rail">
-          <div class="draft">
-            <div class="draft-label"><span>Hermes draft</span><span>tone: firm / safe</span></div>
-            <p class="type-line">Quick check on invoice #1051. The hosted Stripe link is still active, and we can keep the account current today.</p>
-          </div>
-          <div class="approval">
-            <div class="operator-line">
-              <img src="assets/alex-pfp.png" alt="">
-              <div><b>Alex reviews</b><span>human-in-the-loop</span></div>
-            </div>
-            <div class="approval-top">
-              <b>Send firm reminder?</b>
-              <span id="approvalState">waiting</span>
-            </div>
-            <div class="approval-buttons">
-              <button type="button" id="approveBtn">Approve</button>
-              <button type="button" id="holdBtn">Hold</button>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <aside class="mobile-agent" aria-label="SOLVENT mobile workflow preview">
-        <div class="stage-top">
-          <span class="light"></span><span class="light"></span><span class="light"></span>
-          <span class="stage-title">agent.run / mobile</span>
-        </div>
-        <div class="mobile-flow">
-          <div class="mobile-step"><img class="logo-mark" src="assets/stripe-logo.png" alt=""><b>Stripe invoice</b><em>$2,400</em></div>
-          <div class="mobile-step"><img class="logo-mark" src="assets/hermes-logo.png" alt=""><b>Nous Hermes</b><em>firm</em></div>
-          <div class="mobile-step"><img class="logo-mark" src="assets/nvidia-logo.png" alt=""><b>NVIDIA Nemotron</b><em>safe</em></div>
-          <div class="mobile-approval">
-            <div class="operator-line">
-              <img src="assets/alex-pfp.png" alt="">
-              <div><b>Alex reviews</b><span>human-in-the-loop</span></div>
-            </div>
-            <p>Send firm reminder to Brightline Studio? Settlement link is ready, action waits here.</p>
-            <div class="approval-buttons">
-              <button type="button">Approve</button>
-              <button type="button">Hold</button>
-            </div>
-          </div>
+        <div class="log">
+          <div class="log-line"><span class="tag st">STRIPE</span><span>invoice #1051 ingested -> hosted link active</span></div>
+          <div class="log-line"><span class="tag hm">HERMES</span><span>decision: firm reminder / no escalation</span></div>
+          <div class="log-line"><span class="tag nv">NEMOTRON</span><span>tone=firm, pressure=low, safety=pass</span></div>
+          <div class="log-line"><span class="tag hu">HUMAN</span><span>approval required -> waiting for tap</span></div>
+          <div class="log-line"><span class="tag ok">PAID</span><span>$2,400 recovered through Stripe test mode</span></div>
+          <div class="log-line"><span class="tag ok">BOUNDARY</span><span>every irreversible action was approved</span></div>
         </div>
       </aside>
     </section>
+  </main>
 
-    <section class="section" id="agent">
-      <div class="wrap">
-        <div class="section-head">
-          <div>
-            <div class="eyebrow">Agent stack</div>
-            <h2>Not a reminder bot. A bounded business operator.</h2>
-          </div>
-          <p class="section-copy">The contest asks for agents that run real operations. SOLVENT shows the whole operation, including the safety boundary that keeps it viable.</p>
-        </div>
-        <div class="story-grid">
-          <article class="story-card">
-            <div class="num">01 / Stripe</div>
-            <h3>Reads the business state</h3>
-            <p>Amount, age, failed payment reason, customer history, and hosted payment links become the working context for the agent.</p>
-          </article>
-          <article class="story-card">
-            <div class="num">02 / Hermes</div>
-            <h3>Chooses the recovery move</h3>
-            <p>Hermes drafts the gentlest message likely to work. The product can raise the floor, but the model cannot weaken policy.</p>
-          </article>
-          <article class="story-card">
-            <div class="num">03 / NVIDIA</div>
-            <h3>Screens before execution</h3>
-            <p>Nemotron Content Safety checks every outgoing message. Unsafe text routes to review instead of reaching customers.</p>
-          </article>
-        </div>
+  <section class="site-section" id="agent">
+    <div class="section-inner">
+      <div class="section-kicker">Bounded business agent</div>
+      <h2 class="section-title">An agent that recovers overdue revenue with control.</h2>
+      <p class="section-lede">
+        SOLVENT helps teams turn unpaid Stripe invoices into structured recovery work:
+        understand the account, choose the right reminder, check message safety, and ask a
+        human before any risky step. The goal is simple: get earned money moving again
+        without turning the process into aggressive collections.
+      </p>
+
+      <div class="workflow-strip" aria-label="Agent workflow">
+        <article class="workflow-step stripe">
+          <small>01 / Stripe</small>
+          <b>Invoice enters the graph</b>
+          <p>Amount, age, hosted payment link, and customer context become structured agent state.</p>
+          <i></i>
+        </article>
+        <article class="workflow-step hermes">
+          <small>02 / Hermes</small>
+          <b>Recovery move is selected</b>
+          <p>Nous Hermes chooses the softest stage that can still work: gentle, firm, or hold.</p>
+          <i></i>
+        </article>
+        <article class="workflow-step nvidia">
+          <small>03 / Nemotron</small>
+          <b>Safety boundary checks tone</b>
+          <p>NVIDIA Nemotron screens pressure, policy risk, and unsafe wording before anything ships.</p>
+          <i></i>
+        </article>
+        <article class="workflow-step human">
+          <small>04 / Human</small>
+          <b>Irreversible steps pause</b>
+          <p>Escalation, discounts, payment plans, and risky messages wait for explicit approval.</p>
+          <i></i>
+        </article>
+        <article class="workflow-step solvent">
+          <small>05 / Solvent</small>
+          <b>Payment closes the loop</b>
+          <p>Stripe test-mode settlement makes the demo observable, repeatable, and judge-friendly.</p>
+          <i></i>
+        </article>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="section" id="story">
-      <div class="wrap">
-        <div class="section-head">
-          <div>
-            <div class="eyebrow">Demo storyboard</div>
-            <h2>The 90-second story is visible on the page.</h2>
-          </div>
-          <p class="section-copy">This is designed to read cleanly in a hackathon video: one invoice, one agent loop, one safety gate, one Stripe settlement path.</p>
-        </div>
-        <div class="movie-strip">
-          <article class="frame">
-            <div class="time">00:00</div>
-            <h3>Invoice stalls</h3>
-            <p>A customer is 17 days overdue. The agent receives Stripe context instead of a vague prompt.</p>
-          </article>
-          <article class="frame">
-            <div class="time">00:18</div>
-            <h3>Hermes drafts</h3>
-            <p>The agent chooses a firm but useful reminder, because the invoice is old and large enough.</p>
-          </article>
-          <article class="frame">
-            <div class="time">00:36</div>
-            <h3>Nemotron scans</h3>
-            <p>The draft is checked for pressure, safety, and tone before it can leave the system.</p>
-          </article>
-          <article class="frame">
-            <div class="time">00:54</div>
-            <h3>Human approves</h3>
-            <p>Escalation waits for a tap. The safety boundary is a product control, not a hope.</p>
-          </article>
-          <article class="frame">
-            <div class="time">01:12</div>
-            <h3>Stripe settles</h3>
-            <p>The hosted link is ready, the message is sent, and the account can become current.</p>
-          </article>
-        </div>
-      </div>
-    </section>
+  <section class="site-section" id="run">
+    <div class="section-inner">
+      <div class="section-kicker">Demo-ready repo</div>
+      <h2 class="section-title">Clone, run the loop, record the agent.</h2>
+      <p class="section-lede">
+        The repo is built for a clean contest demo: Stripe test data, visible model stages,
+        safety checks, and one approval gate before execution.
+      </p>
 
-    <section class="section" id="run">
-      <div class="wrap run-panel">
-        <div>
-          <div class="eyebrow">Run it</div>
-          <h2>Clone the repo, run the loop, record the agent.</h2>
-          <p class="section-copy" style="margin-top:18px">The repo is built for a demo video: Stripe test data, agent decisioning, safety checks, and the approval gate.</p>
-        </div>
-        <div class="terminal">
-          <div class="terminal-head">
-            <span>Local quickstart</span>
-            <button class="copy-all" type="button" data-copy-all>Copy all</button>
+      <div class="run-grid" id="demo-run">
+        <div class="run-panel" aria-label="Live terminal demo preview">
+          <div class="run-card">
+            <img src="assets/solvent-mark.png" alt="">
+            <div><b>Live command-line run</b><span>Hermes, Nemotron, Stripe, Telegram approval gate</span></div>
+            <button class="hero-action primary" type="button" id="runDemoBtnInline">Play terminal run</button>
           </div>
-          <div class="command-stack" aria-label="Quickstart commands">
+          <div class="demo-log" id="inlineDemoLog" aria-live="polite"></div>
+        </div>
+
+        <div class="command-panel" aria-label="Quickstart commands">
+          <div class="command-stack">
             <div class="cmd-line" data-command="git clone https://github.com/busminer/solvent.git">
-              <span class="cmd-step">1</span>
               <code><span class="prompt">$</span> git clone https://github.com/busminer/solvent.git</code>
               <button class="copy-cmd" type="button">Copy</button>
             </div>
             <div class="cmd-line" data-command="cd solvent">
-              <span class="cmd-step">2</span>
               <code><span class="prompt">$</span> cd solvent</code>
               <button class="copy-cmd" type="button">Copy</button>
             </div>
             <div class="cmd-line" data-command="npm install">
-              <span class="cmd-step">3</span>
               <code><span class="prompt">$</span> npm install</code>
               <button class="copy-cmd" type="button">Copy</button>
             </div>
-            <div class="cmd-line" data-command="npm run demo">
-              <span class="cmd-step">4</span>
-              <code><span class="prompt">$</span> npm run demo</code>
+            <div class="cmd-line" data-command="npm run demo -- --verbose">
+              <code><span class="prompt">$</span> npm run demo -- --verbose</code>
               <button class="copy-cmd" type="button">Copy</button>
             </div>
           </div>
+          <div class="doc-links">
+            <a href="https://github.com/busminer/solvent#quickstart" target="_blank" rel="noopener">
+              <span>Quickstart<small>Install keys, seed Stripe test invoices, and run the demo.</small></span>
+              <span class="doc-action">Open <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 5.5 20 12l-6.5 6.5-1.42-1.42L16.17 13H4v-2h12.17l-4.09-4.08L13.5 5.5Z"/></svg></span>
+            </a>
+            <a href="https://github.com/busminer/solvent/blob/main/docs/architecture.md" target="_blank" rel="noopener">
+              <span>Architecture<small>Read the agent graph, safety gates, and approval boundary.</small></span>
+              <span class="doc-action">Open <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 5.5 20 12l-6.5 6.5-1.42-1.42L16.17 13H4v-2h12.17l-4.09-4.08L13.5 5.5Z"/></svg></span>
+            </a>
+            <a href="https://github.com/busminer/solvent/blob/main/docs/whitepaper.md" target="_blank" rel="noopener">
+              <span>Whitepaper<small>Why bounded agents can operate receivables at business scale.</small></span>
+              <span class="doc-action">Open <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 5.5 20 12l-6.5 6.5-1.42-1.42L16.17 13H4v-2h12.17l-4.09-4.08L13.5 5.5Z"/></svg></span>
+            </a>
+          </div>
         </div>
       </div>
-      <div class="wrap" style="margin-top:18px">
-        <div class="links">
-          <a class="doc-link" href="https://github.com/busminer/solvent#quickstart" target="_blank" rel="noopener"><span><b>Quickstart</b><span>Run the complete receivables loop with test data.</span></span><span class="arrow">-&gt;</span></a>
-          <a class="doc-link" href="https://github.com/busminer/solvent/blob/main/docs/architecture.md" target="_blank" rel="noopener"><span><b>Architecture</b><span>Read, decide, screen, settle, approve.</span></span><span class="arrow">-&gt;</span></a>
-          <a class="doc-link" href="https://github.com/busminer/solvent/blob/main/docs/whitepaper.md" target="_blank" rel="noopener"><span><b>Whitepaper</b><span>Why bounded agents can operate receivables at real business scale.</span></span><span class="arrow">-&gt;</span></a>
-        </div>
-      </div>
-    </section>
-  </main>
 
-  <footer>
-    <div class="wrap footer-inner">
-      <div class="footer-brand">
-        <img src="assets/solvent-brand.png" alt="SOLVENT AI Receivables Operator">
-        <div><strong>SOLVENT</strong> - Nous Hermes, NVIDIA Nemotron Safety, and Stripe for bounded receivables automation.</div>
-      </div>
-      <div class="social">
-        <a href="https://x.com/AlexKosa1" target="_blank" rel="noopener">X</a>
-        <a href="https://github.com/busminer" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://t.me/Bitcoinbus" target="_blank" rel="noopener">Telegram</a>
+      <div class="contact-panel" id="contact">
+        <div>
+          <div class="section-kicker">Builder contact</div>
+          <p>Built by Alex Kosa for the Hermes Agent Accelerated Business Hackathon with NVIDIA, Stripe, and Nous Research.</p>
+        </div>
+        <div class="contact-actions">
+          <a class="primary" href="https://github.com/busminer/solvent" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.1 3.29 9.4 7.86 10.93.58.1.79-.25.79-.56v-2.16c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.75 2.69 1.24 3.35.95.1-.74.4-1.24.73-1.53-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.16 1.18a10.96 10.96 0 0 1 5.76 0c2.19-1.49 3.15-1.18 3.15-1.18.63 1.59.24 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.43-2.7 5.41-5.27 5.7.42.36.79 1.07.79 2.16v3.15c0 .31.21.67.8.56A11.52 11.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+            Project repository
+          </a>
+          <a href="https://x.com/AlexKosa1" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2H21.6l-7.33 8.38L22.9 22h-6.76l-5.29-6.92L4.79 22H1.43l7.84-8.96L1 2h6.93l4.78 6.32L18.244 2Zm-1.18 17.95h1.86L6.91 3.94H4.91l12.154 16.01Z"/></svg>
+            Alex on X
+          </a>
+          <a href="https://t.me/Bitcoinbus" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.9 4.27c.3-1.33-.86-1.85-1.9-1.45L2.72 9.48c-1.18.46-1.17 1.12-.2 1.42l4.43 1.38L17.2 5.8c.49-.29.93-.13.56.19l-8.3 7.5-.32 4.7c.47 0 .68-.22.94-.47l2.26-2.2 4.7 3.47c.87.48 1.49.23 1.7-.8L21.9 4.27Z"/></svg>
+            Telegram contact
+          </a>
+        </div>
       </div>
     </div>
-  </footer>
+  </section>
 
   <div class="demo-modal" id="demoModal" aria-hidden="true">
     <div class="demo-console" role="dialog" aria-modal="true" aria-labelledby="demoTitle">
       <div class="demo-console-head">
         <span class="light"></span><span class="light"></span><span class="light"></span>
         <b id="demoTitle">SOLVENT live agent run</b>
-        <span>npm run demo</span>
+        <span>npm run demo -- --verbose --tg</span>
         <button class="demo-close" type="button" id="demoClose" aria-label="Close demo">x</button>
       </div>
       <div class="demo-body">
@@ -1893,21 +1686,18 @@
   </div>
 
   <script>
-    const cloneCommand = "git clone https://github.com/busminer/solvent.git";
-    const copyBtn = document.getElementById("copyBtn");
-    const runDemoBtn = document.getElementById("runDemoBtn");
-    const approveBtn = document.getElementById("approveBtn");
-    const holdBtn = document.getElementById("holdBtn");
-    const approvalState = document.getElementById("approvalState");
     const demoModal = document.getElementById("demoModal");
     const demoClose = document.getElementById("demoClose");
     const demoRestart = document.getElementById("demoRestart");
     const demoLog = document.getElementById("demoLog");
+    const inlineDemoLog = document.getElementById("inlineDemoLog");
     const demoInvoice = document.getElementById("demoInvoice");
     const demoStage = document.getElementById("demoStage");
     const demoSafety = document.getElementById("demoSafety");
     const demoApproval = document.getElementById("demoApproval");
     const demoProgress = document.getElementById("demoProgress");
+    const runDemoBtn = document.getElementById("runDemoBtn");
+    const runDemoBtnInline = document.getElementById("runDemoBtnInline");
     let demoTimers = [];
 
     const demoEvents = [
@@ -1916,29 +1706,23 @@
       { t: "00:00.520", type: "warn", msg: "[HERMES] inference-api.nousresearch.com -> <b>Hermes-4-70B</b>", stage: "Hermes online", progress: 9 },
       { t: "00:00.780", type: "safe", msg: "[NEMOTRON] integrate.api.nvidia.com -> <b>nvidia/llama-3.1-nemoguard-8b-content-safety</b>", safety: "online", stage: "Nemotron online", progress: 12 },
       { t: "00:01.040", type: "pay", msg: "[STRIPE] api.stripe.com -> <b>test mode</b>", stage: "Stripe online", progress: 15 },
-
       { t: "00:01.420", type: "pay", msg: "[STRIPE] -> GET /v1/invoices?status=open", stage: "reading Stripe", progress: 19 },
       { t: "00:01.900", type: "pay", msg: "[STRIPE] <- 200 OK / <b>5 overdue invoices</b> / <b>$10,420 outstanding</b>", invoice: "5 invoices / $10,420", stage: "invoice queue", progress: 24 },
-
-      { t: "00:02.360", type: "warn", msg: "[HERMES] #1042 Maria Flux Studio -> <b>gentle_reminder</b> / oversight likely", stage: "Hermes strategy", progress: 29 },
+      { t: "00:02.360", type: "warn", msg: "[HERMES] #1042 Maria Flux Studio -> <b>gentle_reminder</b> / oversight likely", stage: "Hermes decision", progress: 29 },
       { t: "00:02.760", type: "safe", msg: "[NEMOTRON] #1042 message text -> <b>safe</b>", safety: "safe / passed", stage: "safety scan", progress: 33 },
       { t: "00:03.120", type: "pay", msg: "[STRIPE] #1042 hosted link created, gentle message sent", stage: "Stripe action", progress: 37 },
       { t: "00:03.460", type: "safe", msg: "[PAID] #1042 Maria Flux Studio paid <b>$750</b> after gentle reminder", stage: "recovered", progress: 41 },
-
-      { t: "00:03.920", type: "warn", msg: "[HERMES] #1051 Brightline Agency -> gentle_reminder", stage: "Hermes strategy", progress: 45 },
+      { t: "00:03.920", type: "warn", msg: "[HERMES] #1051 Brightline Agency -> gentle_reminder", stage: "Hermes decision", progress: 45 },
       { t: "00:04.260", type: "warn", msg: "[POLICY] #1051 code floor: gentle_reminder -> <b>firm_reminder</b> / approval required", approval: "required", stage: "policy floor", progress: 50 },
       { t: "00:04.620", type: "safe", msg: "[NEMOTRON] #1051 message text -> <b>safe</b>", safety: "safe / passed", stage: "Nemotron safety", progress: 54 },
       { t: "00:04.980", type: "warn", msg: "[TELEGRAM] Approval needed: <b>Firm reminder</b> - Brightline Agency (#1051)", approval: "waiting for Alex", stage: "human gate", progress: 58 },
-
-      { t: "00:05.420", type: "warn", msg: "[HERMES] #1067 Nomad Coffee Co. -> <b>payment_plan</b> / cashflow issues", stage: "Hermes strategy", progress: 62 },
+      { t: "00:05.420", type: "warn", msg: "[HERMES] #1067 Nomad Coffee Co. -> <b>payment_plan</b> / cashflow issues", stage: "Hermes decision", progress: 62 },
       { t: "00:05.760", type: "safe", msg: "[NEMOTRON] #1067 message text -> <b>safe</b>", safety: "safe / passed", stage: "safety scan", progress: 65 },
       { t: "00:06.100", type: "warn", msg: "[TELEGRAM] Approval needed: <b>Payment plan</b> - Nomad Coffee Co. (#1067)", approval: "2 pending", stage: "human gate", progress: 68 },
-
       { t: "00:06.520", type: "pay", msg: "[STRIPE] #1078 Vertex SaaS Ltd hosted link created, gentle message sent", stage: "Stripe action", progress: 72 },
       { t: "00:06.860", type: "safe", msg: "[PAID] #1078 Vertex SaaS Ltd paid <b>$1,180</b>", stage: "recovered", progress: 75 },
-      { t: "00:07.260", type: "warn", msg: "[HERMES] #1090 Halcyon Media -> <b>escalation</b> / nearly two months overdue", stage: "Hermes strategy", progress: 78 },
+      { t: "00:07.260", type: "warn", msg: "[HERMES] #1090 Halcyon Media -> <b>escalation</b> / nearly two months overdue", stage: "Hermes decision", progress: 78 },
       { t: "00:07.620", type: "warn", msg: "[TELEGRAM] Approval needed: <b>Escalation / write-off</b> - Halcyon Media (#1090)", approval: "3 pending", stage: "human gate", progress: 81 },
-
       { t: "00:08.040", type: "warn", msg: "[HUMAN] Pending approvals: <b>3</b>. Sent to Telegram - tap to decide.", approval: "Telegram pending", stage: "approval queue", progress: 84 },
       { t: "00:08.420", type: "safe", msg: "[HUMAN] Approved in Telegram: Firm reminder - Brightline Agency (#1051)", approval: "approved #1051", stage: "approved", progress: 87 },
       { t: "00:08.820", type: "pay", msg: "[STRIPE] #1051 payment link created after approval", stage: "Stripe settlement", progress: 90 },
@@ -1946,9 +1730,8 @@
       { t: "00:09.560", type: "safe", msg: "[HUMAN] Approved in Telegram: Payment plan - Nomad Coffee Co. (#1067)", approval: "approved #1067", stage: "approved", progress: 94 },
       { t: "00:09.900", type: "pay", msg: "[PAID] #1067 Nomad Coffee Co. paid <b>$1,733.33</b> / installment 1 of 3", stage: "recovered", progress: 96 },
       { t: "00:10.280", type: "warn", msg: "[HUMAN] Held: Escalation / write-off - Halcyon Media (#1090)", approval: "held #1090", stage: "human held", progress: 97 },
-
       { t: "00:10.760", type: "safe", msg: "<b>Recovery Treasury</b> -> Recovered <b>$6,063.33</b> / Agent cost <b>-$4.74</b>", invoice: "4 / 5 resolved", stage: "treasury", progress: 99 },
-      { t: "00:11.120", type: "safe", msg: "Net recovered <b>$6,058.59</b> / Recovery ROI <b>1278x</b>", stage: "complete", progress: 100 },
+      { t: "00:11.120", type: "safe", msg: "Net recovered <b>$6,058.59</b> / safety boundary <b>held</b>", stage: "complete", progress: 100 },
       { t: "00:11.460", type: "safe", msg: "<b>Every irreversible action was human-approved.</b>", approval: "boundary intact", stage: "complete", progress: 100 }
     ];
 
@@ -1968,95 +1751,6 @@
       document.body.removeChild(el);
     }
 
-    copyBtn.addEventListener("click", async () => {
-      const original = copyBtn.textContent;
-      try {
-        await copyText(cloneCommand);
-        copyBtn.textContent = "Copied";
-      } catch (error) {
-        copyBtn.textContent = cloneCommand;
-      }
-      window.setTimeout(() => { copyBtn.textContent = original; }, 1700);
-    });
-
-    function clearDemoTimers() {
-      demoTimers.forEach((timer) => window.clearTimeout(timer));
-      demoTimers = [];
-    }
-
-    function resetDemo() {
-      clearDemoTimers();
-      demoLog.innerHTML = "";
-      demoInvoice.textContent = "waiting";
-      demoStage.textContent = "idle";
-      demoSafety.textContent = "not scanned";
-      demoApproval.textContent = "pending";
-      demoProgress.style.width = "0%";
-    }
-
-    function addDemoLine(event) {
-      const line = document.createElement("div");
-      line.className = "demo-log-line" + (event.type ? " " + event.type : "");
-      line.innerHTML = `<span class="stamp">${event.t}</span><span class="msg">${event.msg}</span>`;
-      demoLog.appendChild(line);
-      demoLog.scrollTop = demoLog.scrollHeight;
-      if (event.invoice) demoInvoice.textContent = event.invoice;
-      if (event.stage) demoStage.textContent = event.stage;
-      if (event.safety) demoSafety.textContent = event.safety;
-      if (event.approval) demoApproval.textContent = event.approval;
-      if (typeof event.progress === "number") demoProgress.style.width = event.progress + "%";
-    }
-
-    function runDemo() {
-      resetDemo();
-      demoModal.classList.add("open");
-      demoModal.setAttribute("aria-hidden", "false");
-      runDemoBtn.classList.add("running");
-      demoEvents.forEach((event, index) => {
-        demoTimers.push(window.setTimeout(() => {
-          addDemoLine(event);
-          if (index === demoEvents.length - 1) runDemoBtn.classList.remove("running");
-        }, index * 520));
-      });
-    }
-
-    function closeDemo() {
-      demoModal.classList.remove("open");
-      demoModal.setAttribute("aria-hidden", "true");
-      runDemoBtn.classList.remove("running");
-      clearDemoTimers();
-    }
-
-    runDemoBtn.addEventListener("click", () => {
-      if (window.location.hash !== "#demo-run") history.replaceState(null, "", "#demo-run");
-      runDemo();
-    });
-    demoRestart.addEventListener("click", runDemo);
-    demoClose.addEventListener("click", closeDemo);
-    demoModal.addEventListener("click", (event) => {
-      if (event.target === demoModal) closeDemo();
-    });
-    window.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && demoModal.classList.contains("open")) closeDemo();
-    });
-    function handleHashRoute() {
-      if (window.location.hash === "#demo-run") {
-        runDemo();
-        return;
-      }
-      const target = document.querySelector(window.location.hash);
-      if (target) {
-        const top = target.getBoundingClientRect().top + window.scrollY - 86;
-        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-      }
-    }
-
-    window.addEventListener("hashchange", handleHashRoute);
-    if (window.location.hash) {
-      window.setTimeout(handleHashRoute, 120);
-      window.setTimeout(handleHashRoute, 650);
-    }
-
     function flashCopied(line, button) {
       const original = button.textContent;
       line.classList.add("copied");
@@ -2067,39 +1761,80 @@
       }, 1300);
     }
 
-    document.querySelectorAll(".cmd-line").forEach((line) => {
-      const button = line.querySelector(".copy-cmd");
-      button.addEventListener("click", () => {
-        flashCopied(line, button);
-        copyText(line.dataset.command).catch(() => {});
-      });
-    });
-
-    const copyAllBtn = document.querySelector("[data-copy-all]");
-    copyAllBtn.addEventListener("click", () => {
-      const lines = [...document.querySelectorAll(".cmd-line")];
-      lines.forEach((line, index) => {
-        window.setTimeout(() => line.classList.add("copied"), index * 85);
-        window.setTimeout(() => line.classList.remove("copied"), 1250 + index * 85);
-      });
-      const original = copyAllBtn.textContent;
-      copyAllBtn.textContent = "Copied";
-      window.setTimeout(() => { copyAllBtn.textContent = original; }, 1400);
-      copyText(lines.map((line) => line.dataset.command).join("\n")).catch(() => {});
-    });
-
-    function setDecision(text, color) {
-      approvalState.textContent = text;
-      approvalState.style.color = color;
-      approvalState.animate([
-        { transform: "scale(1)", filter: "brightness(1)" },
-        { transform: "scale(1.08)", filter: "brightness(1.4)" },
-        { transform: "scale(1)", filter: "brightness(1)" }
-      ], { duration: 460, easing: "ease-out" });
+    function clearDemoTimers() {
+      demoTimers.forEach((timer) => window.clearTimeout(timer));
+      demoTimers = [];
     }
 
-    approveBtn.addEventListener("click", () => setDecision("approved", "#37e7bd"));
-    holdBtn.addEventListener("click", () => setDecision("held", "#ffcf64"));
+    function resetDemo() {
+      clearDemoTimers();
+      demoLog.innerHTML = "";
+      inlineDemoLog.innerHTML = "";
+      demoInvoice.textContent = "waiting";
+      demoStage.textContent = "idle";
+      demoSafety.textContent = "not scanned";
+      demoApproval.textContent = "pending";
+      demoProgress.style.width = "0%";
+    }
+
+    function renderDemoLine(event, target) {
+      const line = document.createElement("div");
+      line.className = "demo-log-line" + (event.type ? " " + event.type : "");
+      line.innerHTML = `<span class="stamp">${event.t}</span><span class="msg">${event.msg}</span>`;
+      target.appendChild(line);
+      target.scrollTop = target.scrollHeight;
+    }
+
+    function addDemoLine(event) {
+      renderDemoLine(event, demoLog);
+      renderDemoLine(event, inlineDemoLog);
+      if (event.invoice) demoInvoice.textContent = event.invoice;
+      if (event.stage) demoStage.textContent = event.stage;
+      if (event.safety) demoSafety.textContent = event.safety;
+      if (event.approval) demoApproval.textContent = event.approval;
+      if (typeof event.progress === "number") demoProgress.style.width = event.progress + "%";
+    }
+
+    function runDemo(openModal = true) {
+      resetDemo();
+      if (openModal) {
+        demoModal.classList.add("open");
+        demoModal.setAttribute("aria-hidden", "false");
+      }
+      demoEvents.forEach((event, index) => {
+        demoTimers.push(window.setTimeout(() => addDemoLine(event), index * 430));
+      });
+    }
+
+    function closeDemo() {
+      demoModal.classList.remove("open");
+      demoModal.setAttribute("aria-hidden", "true");
+      clearDemoTimers();
+    }
+
+    runDemoBtn.addEventListener("click", () => runDemo(true));
+    runDemoBtnInline.addEventListener("click", () => runDemo(false));
+    demoRestart.addEventListener("click", () => runDemo(true));
+    demoClose.addEventListener("click", closeDemo);
+    demoModal.addEventListener("click", (event) => {
+      if (event.target === demoModal) closeDemo();
+    });
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && demoModal.classList.contains("open")) closeDemo();
+    });
+
+    document.querySelectorAll(".cmd-line").forEach((line) => {
+      const button = line.querySelector(".copy-cmd");
+      button.addEventListener("click", async () => {
+        try {
+          await copyText(line.dataset.command);
+          flashCopied(line, button);
+        } catch (error) {
+          button.textContent = "Failed";
+          window.setTimeout(() => { button.textContent = "Copy"; }, 1300);
+        }
+      });
+    });
   </script>
 </body>
 </html>
