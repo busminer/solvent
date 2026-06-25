@@ -1283,14 +1283,14 @@
       }
 
       .stage {
-        min-height: 1540px;
+        min-height: 1380px;
         overflow: hidden;
         padding-top: 92px;
       }
 
       .scene {
         width: min(100% - 12px, 720px);
-        height: 1500px;
+        height: 1340px;
       }
 
       .hud {
@@ -1302,15 +1302,131 @@
       }
 
       .reactor {
-        top: 560px;
-        right: 50%;
-        width: 720px;
-        max-width: 108vw;
-        transform: translate(50%, -50%) scale(.72);
+        top: 440px;
+        left: 0;
+        right: auto;
+        width: 100%;
+        max-width: none;
+        height: 430px;
+        aspect-ratio: auto;
+        transform: none;
+        border: 1px solid rgba(255,255,255,.1);
+        border-radius: 16px;
+        background:
+          radial-gradient(circle at 50% 22%, rgba(55,231,189,.18), transparent 34%),
+          radial-gradient(circle at 78% 72%, rgba(118,185,0,.12), transparent 35%),
+          rgba(4, 8, 12, .5);
+        box-shadow: 0 28px 90px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.05);
+        overflow: hidden;
+      }
+
+      .rings {
+        inset: 14px;
+        opacity: .58;
+      }
+
+      .connectors,
+      .packet {
+        display: none;
+      }
+
+      .scan-field {
+        width: 70%;
+        height: 70%;
+        opacity: .38;
+      }
+
+      .core {
+        inset: 18px 0 auto;
+        height: 150px;
+      }
+
+      .core-shell {
+        width: 116px;
+        height: 116px;
+        border-radius: 28px;
+        box-shadow:
+          0 0 0 16px rgba(55,231,189,.035),
+          0 0 0 38px rgba(55,231,189,.03),
+          0 0 70px rgba(55,231,189,.2),
+          inset 0 1px 0 rgba(255,255,255,.12);
+      }
+
+      .core-shell:before {
+        inset: -10px;
+        border-radius: 36px;
+      }
+
+      .core-shell img {
+        width: 76px;
+        height: 76px;
+        border-radius: 22px;
+      }
+
+      .core-label {
+        bottom: -36px;
+        font-size: 9px;
+        letter-spacing: .14em;
+      }
+
+      .node {
+        width: calc(50% - 16px);
+        min-height: 118px;
+        padding: 12px;
+        border-radius: 10px;
+        animation: none;
+      }
+
+      .node:before {
+        opacity: .2;
+      }
+
+      .node-header {
+        gap: 8px;
+        font-size: 13px;
+      }
+
+      .node-header img {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+      }
+
+      .node em {
+        margin-top: 8px;
+        font-size: 9px;
+        letter-spacing: .12em;
+      }
+
+      .node p {
+        margin-top: 8px;
+        font-size: 10px;
+        line-height: 1.35;
+      }
+
+      .node.stripe {
+        left: 12px;
+        top: 172px;
+      }
+
+      .node.hermes {
+        right: 12px;
+        top: 172px;
+      }
+
+      .node.human {
+        left: 12px;
+        bottom: 16px;
+      }
+
+      .node.nemotron {
+        right: 12px;
+        bottom: 16px;
       }
 
       .stats {
-        bottom: 0;
+        top: 900px;
+        bottom: auto;
         width: 100%;
         grid-template-columns: 1fr;
       }
@@ -1318,7 +1434,7 @@
       .terminal {
         left: 0;
         right: auto;
-        top: 930px;
+        top: 1068px;
         bottom: auto;
         width: 100%;
       }
