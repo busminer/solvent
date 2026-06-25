@@ -1373,9 +1373,98 @@
         opacity: .58;
       }
 
-      .connectors,
+      .connectors {
+        display: block;
+        inset: 0;
+        opacity: .74;
+        z-index: 4;
+        mask-image: linear-gradient(180deg, transparent 0%, black 14%, black 86%, transparent 100%);
+      }
+
+      .connectors svg {
+        opacity: .95;
+      }
+
+      .connector {
+        stroke: rgba(255,255,255,.14);
+        stroke-width: 1;
+      }
+
+      .flow {
+        stroke-width: 2.4;
+        stroke-dasharray: 6 250;
+        filter: drop-shadow(0 0 7px currentColor);
+      }
+
       .packet {
-        display: none;
+        z-index: 18;
+        display: block;
+        width: 9px;
+        height: 9px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        overflow: hidden;
+        font-size: 0;
+        letter-spacing: 0;
+        background: currentColor;
+        box-shadow: 0 0 16px currentColor, 0 0 34px currentColor;
+      }
+
+      .packet.invoice {
+        color: var(--stripe);
+      }
+
+      .packet.prompt {
+        color: var(--hermes);
+      }
+
+      .packet.scan {
+        color: var(--nvidia);
+      }
+
+      .packet.paid {
+        color: var(--solvent);
+      }
+
+      .packet:after {
+        content: "";
+        position: absolute;
+        inset: -8px -20px;
+        background: radial-gradient(circle, currentColor, transparent 62%);
+        opacity: .26;
+      }
+
+      .scan-field {
+        z-index: 5;
+      }
+
+      .rings {
+        z-index: 2;
+      }
+
+      .core {
+        z-index: 16;
+      }
+
+      .node {
+        z-index: 20;
+      }
+
+      .packet {
+        animation-duration: 7.2s;
+      }
+
+      .packet.prompt {
+        animation-delay: -1.8s;
+      }
+
+      .packet.scan {
+        animation-delay: -3.6s;
+      }
+
+      .packet.paid {
+        animation-delay: -5.4s;
       }
 
       .scan-field {
@@ -1623,7 +1712,7 @@
         </div>
 
         <div class="connectors">
-          <svg viewBox="0 0 760 760" aria-hidden="true">
+          <svg viewBox="0 0 760 760" preserveAspectRatio="none" aria-hidden="true">
             <path class="connector" d="M116 388 C 235 360, 288 388, 380 380 S 522 259, 625 215" />
             <path class="connector" d="M625 215 C 560 310, 496 328, 380 380 S 542 536, 622 575" />
             <path class="connector" d="M622 575 C 495 536, 452 505, 380 380 S 229 548, 166 584" />
