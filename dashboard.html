@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SOLVENT — Reactor Command Center</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#020407; --panel:rgba(9,13,20,.74); --line:rgba(255,255,255,.10);
+    --text:#eef4f1; --muted:#8ea2a8; --faint:#56707a;
+    --solvent:#37e7bd; --nvidia:#76b900; --stripe:#7d76ff; --hermes:#c9b8ff;
+    --human:#39d5ff; --danger:#ff5d7d; --ok:#37e7bd; --green:#37e08a;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; font-family:var(--sans); color:var(--text); padding-bottom:54px;
+    background:
+      linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px) 0 0/46px 46px,
+      linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px) 0 0/46px 46px,
+      radial-gradient(circle at 14% 12%,rgba(55,224,138,.16),transparent 24%),
+      radial-gradient(circle at 84% 14%,rgba(125,118,255,.16),transparent 26%),
+      radial-gradient(circle at 62% 88%,rgba(55,231,189,.12),transparent 30%),
+      linear-gradient(120deg,#020603 0%,#04060a 48%,#0a0714 100%);
+  }
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:1px;font-size:18px}
+  .brand small{font-weight:500;color:var(--muted);letter-spacing:0;font-size:13px}
+  .brand .markimg{width:34px;height:34px;border-radius:9px;object-fit:cover;box-shadow:0 0 18px rgba(55,231,189,.35)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{font-family:var(--mono);font-size:11px;padding:5px 11px;border:1px solid var(--line);border-radius:999px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .chip .led{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+  .chip.hermes.on .led{background:var(--hermes);box-shadow:0 0 8px var(--hermes);animation:beat 1.6s ease-in-out infinite}
+  .chip.nvidia.on .led{background:var(--nvidia);box-shadow:0 0 8px var(--nvidia);animation:beat 1.6s ease-in-out infinite}
+  .chip.stripe.on .led{background:var(--stripe);box-shadow:0 0 8px var(--stripe);animation:beat 1.6s ease-in-out infinite}
+  @keyframes beat{0%,100%{opacity:1}50%{opacity:.35}}
+  .chip.flash{animation:chipflash .8s ease}
+  @keyframes chipflash{0%{background:rgba(55,224,138,.16)}100%{background:transparent}}
+  .chip.down .led{background:var(--danger);box-shadow:0 0 8px var(--danger);animation:none}
+  .node .wire.fresh{animation:wireflash .9s ease}
+  @keyframes wireflash{0%{background:rgba(55,224,138,.14)}100%{background:transparent}}
+  .chip b{color:var(--text);font-weight:600;text-transform:lowercase}
+  .run{font-family:var(--sans);font-weight:700;font-size:14px;cursor:pointer;color:#04140b;
+    background:linear-gradient(135deg,#46f29a,#23c46e);border:none;border-radius:11px;padding:12px 20px;
+    box-shadow:0 0 26px rgba(55,224,138,.4);transition:transform .1s,opacity .2s}
+  .run:hover{transform:translateY(-1px)} .run:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+
+  main{display:grid;grid-template-columns:300px 1fr 380px;gap:16px;padding:18px 24px;max-width:1660px;margin:0 auto;align-items:start}
+  .col{display:flex;flex-direction:column;gap:16px;min-width:0}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px 16px;backdrop-filter:blur(7px)}
+  .panel h2{margin:0 0 12px;font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);font-weight:600}
+
+  .case{display:flex;align-items:center;gap:12px;padding:10px 11px;border:1px solid var(--line);border-radius:11px;margin-bottom:8px;transition:border-color .2s,background .2s}
+  .case.active{border-color:var(--solvent);background:rgba(55,231,189,.07)}
+  .ring{position:relative;width:42px;height:42px;flex:none}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:600}
+  .case .meta{flex:1;min-width:0}
+  .case .meta .top{display:flex;justify-content:space-between;gap:6px}
+  .case .client{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .case .amt{font-family:var(--mono);font-size:13px}
+  .case .sub{font-size:11px;color:var(--faint);margin-top:2px}
+  .case .exp{font-family:var(--mono);font-size:12px;color:var(--solvent);text-align:right}
+  .band-high{color:var(--ok)} .band-medium{color:#ffd166} .band-low{color:var(--danger)}
+  .stroke-high{stroke:var(--ok)} .stroke-medium{stroke:#ffd166} .stroke-low{stroke:var(--danger)}
+
+  .tre{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat{border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+  .stat .k{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--faint)}
+  .stat .v{font-family:var(--mono);font-size:19px;font-weight:600;margin-top:3px}
+  .stat.net .v{color:var(--solvent)} .stat.rate .v{color:var(--green)}
+  .bar{height:8px;border-radius:6px;background:rgba(255,255,255,.07);margin-top:12px;overflow:hidden}
+  .bar-fill{height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--green),var(--solvent));transition:width .6s cubic-bezier(.2,.7,.2,1)}
+  .bar-cap{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px}
+
+  .reactor-wrap{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px 14px 6px;backdrop-filter:blur(7px)}
+  .reactor-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .reactor-head .t{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);font-weight:600}
+  .reactor-head .legend{font-family:var(--mono);font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.6px}
+  .stage{position:relative;width:100%;max-width:800px;margin:0 auto;aspect-ratio:800/560}
+  .stage svg.arcs{position:absolute;inset:0;width:100%;height:100%}
+  .orbit{fill:none;stroke:rgba(255,255,255,.06);stroke-width:1;stroke-dasharray:3 7}
+  .arc{fill:none;stroke:rgba(255,255,255,.10);stroke-width:1.4}
+  .arc.hot{stroke:rgba(255,255,255,.4)}
+  .node{position:absolute;transform:translate(-50%,-50%);width:182px;background:rgba(7,11,18,.9);border:1px solid var(--line);border-radius:14px;padding:11px 12px;transition:box-shadow .2s,border-color .2s,transform .2s}
+  .node.firing{transform:translate(-50%,-50%) scale(1.04)}
+  .node .nh{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+  .node .ic{width:26px;height:26px;border-radius:7px;overflow:hidden;display:grid;place-items:center;font-weight:800;font-size:12px;color:#eef4f1;background:rgba(255,255,255,.06);flex:none}
+  .node .ic img{width:100%;height:100%;object-fit:cover;display:block}
+  .node .role{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--faint);margin:6px 0 4px}
+  .node .desc{font-size:11px;color:var(--muted);line-height:1.45}
+  .node .wire{font-family:var(--mono);font-size:10px;color:var(--faint);margin-top:7px;padding-top:7px;border-top:1px solid var(--line);min-height:15px}
+  .node .wire .ok{color:var(--green)}
+  .node.stripe.firing{border-color:var(--stripe);box-shadow:0 0 26px rgba(125,118,255,.45)}
+  .node.hermes.firing{border-color:var(--hermes);box-shadow:0 0 26px rgba(201,184,255,.45)}
+  .node.nemotron.firing{border-color:var(--nvidia);box-shadow:0 0 26px rgba(118,185,0,.45)}
+  .node.human.firing{border-color:var(--human);box-shadow:0 0 26px rgba(57,213,255,.45)}
+
+  .core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:152px;height:152px;border-radius:50%;display:grid;place-items:center;text-align:center;
+    background:radial-gradient(circle at 50% 40%,rgba(55,231,189,.2),rgba(7,11,18,.92) 70%);
+    border:1px solid rgba(55,231,189,.35);box-shadow:0 0 44px rgba(55,231,189,.2),inset 0 0 30px rgba(55,231,189,.08);transition:box-shadow .2s}
+  .core.pulse{box-shadow:0 0 70px rgba(55,231,189,.55),inset 0 0 30px rgba(55,231,189,.16)}
+  .core.danger{box-shadow:0 0 70px rgba(255,93,125,.55)}
+  .core .cmark{width:48px;height:48px;border-radius:13px;object-fit:cover;box-shadow:0 0 22px rgba(55,231,189,.5)}
+  .core .clabel{font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--solvent);margin-top:8px}
+  .core .cnow{font-size:11px;color:var(--muted);margin-top:3px;max-width:124px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .flow-label{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:999px;background:rgba(7,11,18,.92);border:1px solid var(--line);opacity:0;transition:opacity .2s;pointer-events:none}
+
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+  .tile{border:1px solid var(--line);border-radius:11px;padding:9px 12px}
+  .tile .k{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--faint)}
+  .tile .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:3px}
+
+  .draftcard{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:rgba(7,11,18,.55)}
+  .draftcard .dh{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:8px}
+  .draftcard .dh .stage-tag{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.6px;padding:2px 8px;border-radius:6px;background:rgba(201,184,255,.14);color:var(--hermes)}
+  .draftcard .dh .who{color:var(--text);font-weight:600}
+  .draftcard .reason{font-size:12px;color:var(--hermes);font-style:italic;line-height:1.5;margin-bottom:9px}
+  .draftcard .msg{font-family:var(--mono);font-size:11.5px;color:#cdd6e4;line-height:1.55;white-space:pre-wrap;border-left:2px solid var(--line);padding-left:10px;max-height:84px;overflow:auto}
+  .draftcard .screen{font-family:var(--mono);font-size:11px;margin-top:9px;color:var(--nvidia)}
+  .draftcard.empty .reason,.draftcard.empty .msg,.draftcard.empty .screen{display:none}
+
+  .empty{color:var(--faint);font-size:13px;padding:8px 2px}
+  .appr{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;border-left:3px solid var(--human)}
+  .appr .label{font-weight:600;font-size:14px}
+  .appr .sub{font-size:12px;color:var(--muted);margin:4px 0 10px}
+  .appr .tag{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:6px;background:rgba(57,213,255,.12);color:var(--human);margin-right:6px}
+  .btns{display:flex;gap:8px}
+  .btn{font-family:var(--sans);font-weight:600;font-size:13px;cursor:pointer;border-radius:9px;padding:8px 14px;border:1px solid var(--line);background:transparent;color:var(--text)}
+  .btn.approve{background:var(--human);color:#04121a;border:none}
+  .btn.hold{color:var(--muted)}
+  .btn:hover{filter:brightness(1.08)}
+
+  .term{font-family:var(--mono);font-size:12px}
+  .term .conn{display:flex;flex-direction:column;gap:5px;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+  .term .conn .row{display:flex;align-items:center;gap:8px;color:var(--muted)}
+  .term .conn .led{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+  .term .conn .row.hermes.on{color:var(--hermes)} .term .conn .row.hermes.on .led{background:var(--hermes);box-shadow:0 0 8px var(--hermes)}
+  .term .conn .row.nemotron.on{color:var(--nvidia)} .term .conn .row.nemotron.on .led{background:var(--nvidia);box-shadow:0 0 8px var(--nvidia)}
+  .term .conn .row.stripe.on{color:var(--stripe)} .term .conn .row.stripe.on .led{background:var(--stripe);box-shadow:0 0 8px var(--stripe)}
+  .term .conn .row b{color:var(--text)}
+  .log{line-height:1.65;height:286px;overflow:auto}
+  .log .ln{display:flex;gap:8px;padding:1px 0}
+  .log .t{display:inline-block;min-width:78px;font-weight:700}
+  .t-HERMES{color:var(--hermes)} .t-NEMOTRON{color:var(--nvidia)} .t-STRIPE{color:var(--stripe)}
+  .t-PAID,.t-LEDGER{color:var(--ok)} .t-HUMAN{color:var(--human)} .t-POLICY,.t-RISK{color:#ffd166} .t-AGENT{color:var(--human)} .t-WIRE{color:var(--faint)}
+  .log .msg{color:#cdd6e4}
+
+  .footer{position:fixed;left:0;right:0;bottom:0;height:46px;display:flex;align-items:center;justify-content:center;gap:14px;
+    background:linear-gradient(0deg,rgba(2,4,7,.96),rgba(2,4,7,.5));border-top:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .footer img{height:18px;width:18px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:5px}
+  .footer .seg{display:flex;align-items:center}
+  .footer b{color:var(--text);font-weight:600}
+
+  .verdict{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(2,4,7,.78);backdrop-filter:blur(4px)}
+  .verdict.show{display:flex;animation:fade .4s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .vcard{width:min(520px,92vw);border:1px solid rgba(55,231,189,.4);border-radius:20px;padding:30px 34px;text-align:center;
+    background:radial-gradient(circle at 50% 0%,rgba(55,231,189,.16),rgba(7,11,18,.96) 60%);box-shadow:0 0 70px rgba(55,231,189,.25)}
+  .vcard .vtitle{font-size:13px;text-transform:uppercase;letter-spacing:2px;color:var(--solvent);margin-bottom:18px}
+  .vstats{display:flex;justify-content:center;gap:26px;margin-bottom:18px}
+  .vstats .vs .n{font-family:var(--mono);font-size:30px;font-weight:700}
+  .vstats .vs .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+  .vstats .vs.rec .n{color:var(--solvent)} .vstats .vs.rate .n{color:var(--green)}
+  .vbound{font-size:13px;color:var(--text);padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:16px}
+  .vbound b{color:var(--human)}
+  .vbrand{display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:18px}
+  .vbrand img{height:16px;width:16px;border-radius:4px;object-fit:cover}
+  .vclose{font-family:var(--sans);font-weight:700;cursor:pointer;color:#04140b;background:linear-gradient(135deg,#46f29a,#23c46e);border:none;border-radius:10px;padding:10px 22px}
+
+  .run.ghost{background:transparent;color:var(--text);border:1px solid var(--line);box-shadow:none;margin-right:10px}
+  .run.ghost:hover{border-color:var(--solvent);color:var(--solvent)}
+  .headbtns{display:flex;align-items:center}
+
+  .ctcard{width:min(560px,93vw);border:1px solid var(--line);border-radius:20px;padding:26px 30px;background:radial-gradient(circle at 50% 0%,rgba(125,118,255,.12),rgba(7,11,18,.97) 60%);box-shadow:0 0 60px rgba(0,0,0,.5)}
+  .ctcard .vtitle{font-size:13px;text-transform:uppercase;letter-spacing:2px;color:var(--solvent);margin-bottom:6px}
+  .ctcard .vsub{font-size:12px;color:var(--muted);margin-bottom:20px}
+  .ctrow{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--line);border-radius:13px;margin-bottom:11px}
+  .ctrow img{width:30px;height:30px;border-radius:8px;object-fit:cover;flex:none}
+  .ctrow .name{font-weight:700;font-size:15px;flex:none;min-width:140px}
+  .ctrow .host{font-family:var(--mono);font-size:11px;color:var(--faint);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ctrow .pill{font-family:var(--mono);font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+  .ctrow.ok .pill{color:var(--green);border-color:rgba(55,224,138,.4);background:rgba(55,224,138,.1)}
+  .ctrow.fail .pill{color:var(--danger);border-color:rgba(255,93,125,.4);background:rgba(255,93,125,.1)}
+  .ctrow.run .pill{color:var(--human)}
+  .ctactions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .ctactions .btn2{font-family:var(--sans);font-weight:700;cursor:pointer;border-radius:10px;padding:10px 18px;border:1px solid var(--line);background:transparent;color:var(--text)}
+  .ctactions .btn2.go{color:#04140b;background:linear-gradient(135deg,#46f29a,#23c46e);border:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--human);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-1px;margin-right:6px}
+
+  @media (max-width:1280px){ main{grid-template-columns:1fr} .stage{max-width:660px} }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand"><img class="markimg" src="https://solventagent.vercel.app/assets/solvent-mark.png" alt="" onerror="this.outerHTML='<span class=&quot;markimg&quot; style=&quot;background:linear-gradient(135deg,#37e7bd,#7d76ff);display:grid;place-items:center;color:#03110d&quot;>S</span>'"> SOLVENT <small>· reactor command center</small></div>
+    <div class="chips">
+      <span class="chip hermes" id="chip-hermes"><span class="led"></span>Hermes <b>—</b></span>
+      <span class="chip nvidia" id="chip-nemo"><span class="led"></span>Nemotron <b>—</b></span>
+      <span class="chip stripe" id="chip-stripe"><span class="led"></span>Stripe <b>—</b></span>
+    </div>
+    <div class="headbtns">
+      <button class="run ghost" id="testBtn" onclick="testConnections()">Test connections</button>
+      <button class="run" id="runBtn" onclick="runCycle()">Run recovery cycle</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="col">
+      <section class="panel">
+        <h2>Recovery queue · ranked by expected value</h2>
+        <div id="queue"><div class="empty">Press “Run recovery cycle”.</div></div>
+      </section>
+      <section class="panel">
+        <h2>Recovery treasury</h2>
+        <div class="tre">
+          <div class="stat"><div class="k">Recovered</div><div class="v" id="t-rec">$0</div></div>
+          <div class="stat"><div class="k">Agent cost</div><div class="v" id="t-cost">$0</div></div>
+          <div class="stat net"><div class="k">Net recovered</div><div class="v" id="t-net">$0</div></div>
+          <div class="stat rate"><div class="k">Recovery rate</div><div class="v" id="t-rate">—</div></div>
+        </div>
+        <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
+        <div class="bar-cap" id="bar-cap">awaiting run</div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="reactor-wrap">
+        <div class="reactor-head">
+          <span class="t">Agent operations loop · live</span>
+          <span class="legend">live graph · safe / approved / paid</span>
+        </div>
+        <div class="stage" id="stage">
+          <svg class="arcs" id="arcs" viewBox="0 0 800 560" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <circle class="orbit" cx="400" cy="280" r="120"/>
+            <circle class="orbit" cx="400" cy="280" r="180"/>
+            <circle class="orbit" cx="400" cy="280" r="244"/>
+            <path id="arc-stripe"   class="arc" d="M172,150 Q 280,195 400,280"/>
+            <path id="arc-hermes"   class="arc" d="M628,150 Q 520,195 400,280"/>
+            <path id="arc-nemotron" class="arc" d="M628,410 Q 520,365 400,280"/>
+            <path id="arc-human"    class="arc" d="M172,410 Q 280,365 400,280"/>
+          </svg>
+
+          <div class="node stripe" id="node-stripe" style="left:21.5%;top:27%">
+            <div class="nh"><span class="ic"><img src="https://solventagent.vercel.app/assets/stripe-logo.png" alt="" onerror="this.parentElement.textContent='S'"></span> Stripe</div>
+            <div class="role">invoice + payment link</div>
+            <div class="desc">Overdue invoices enter as agent tasks; settles in test mode.</div>
+            <div class="wire" id="wire-stripe"></div>
+          </div>
+          <div class="node hermes" id="node-hermes" style="left:78.5%;top:27%">
+            <div class="nh"><span class="ic"><img src="https://solventagent.vercel.app/assets/hermes-logo.png" alt="" onerror="this.parentElement.textContent='H'"></span> Nous Hermes</div>
+            <div class="role">recovery decision</div>
+            <div class="desc">Picks the softest viable stage — firm reminder, not escalation.</div>
+            <div class="wire" id="wire-hermes"></div>
+          </div>
+          <div class="node nemotron" id="node-nemotron" style="left:78.5%;top:73%">
+            <div class="nh"><span class="ic"><img src="https://solventagent.vercel.app/assets/nvidia-logo.png" alt="" onerror="this.parentElement.textContent='N'"></span> NVIDIA Nemotron</div>
+            <div class="role">ai safety scan</div>
+            <div class="desc">Screens tone & risk. Unsafe text can never ship.</div>
+            <div class="wire" id="wire-nemotron"></div>
+          </div>
+          <div class="node human" id="node-human" style="left:21.5%;top:73%">
+            <div class="nh"><span class="ic"><img src="https://solventagent.vercel.app/assets/alex-pfp.png" alt="" onerror="this.parentElement.textContent='⛨'"></span> Human gate</div>
+            <div class="role">approval boundary</div>
+            <div class="desc">Irreversible actions pause until an explicit tap.</div>
+            <div class="wire" id="wire-human">human-in-the-loop</div>
+          </div>
+
+          <div class="core" id="core">
+            <img class="cmark" src="https://solventagent.vercel.app/assets/solvent-mark.png" alt="" onerror="this.outerHTML='<div class=&quot;cmark&quot; style=&quot;background:linear-gradient(135deg,#37e7bd,#7d76ff);display:grid;place-items:center;font-weight:800;color:#03110d&quot;>S</div>'">
+            <div class="clabel">SOLVENT OPERATOR</div>
+            <div class="cnow" id="cnow">idle</div>
+          </div>
+          <div class="flow-label" id="flowLabel"></div>
+        </div>
+
+        <div class="tiles">
+          <div class="tile"><div class="k">Tasks</div><div class="v" id="tile-tasks">0 / 0</div></div>
+          <div class="tile"><div class="k">Safety</div><div class="v" id="tile-safety">—</div></div>
+          <div class="tile"><div class="k">Boundary</div><div class="v" id="tile-boundary">—</div></div>
+        </div>
+
+        <div class="draftcard empty" id="draftcard">
+          <div class="dh"><span class="stage-tag" id="dc-stage">idle</span><span class="who" id="dc-client">agent is waiting for the next case…</span></div>
+          <div class="reason" id="dc-reason"></div>
+          <div class="msg" id="dc-msg"></div>
+          <div class="screen" id="dc-screen"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel">
+        <h2>Approvals · the human holds the line</h2>
+        <div id="approvals"><div class="empty">No actions waiting. Irreversible steps appear here.</div></div>
+      </section>
+      <section class="panel">
+        <h2>agent.run / solvent_recovery.graph</h2>
+        <div class="term">
+          <div class="conn">
+            <div class="row hermes" id="conn-hermes"><span class="led"></span>HERMES <b>connecting…</b></div>
+            <div class="row nemotron" id="conn-nemo"><span class="led"></span>NEMOTRON <b>connecting…</b></div>
+            <div class="row stripe" id="conn-stripe"><span class="led"></span>STRIPE <b>connecting…</b></div>
+          </div>
+          <div class="log" id="log"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="footer">
+    <span class="seg"><img src="https://solventagent.vercel.app/assets/hermes-logo.png" alt="" onerror="this.style.display='none'">Powered by <b>&nbsp;Nous Hermes</b></span>
+    <span class="seg"><img src="https://solventagent.vercel.app/assets/nvidia-logo.png" alt="" onerror="this.style.display='none'"><b>NVIDIA Nemotron</b></span>
+    <span class="seg"><img src="https://solventagent.vercel.app/assets/stripe-logo.png" alt="" onerror="this.style.display='none'"><b>Stripe</b></span>
+    <span class="seg">· human holds the line</span>
+  </div>
+
+  <div class="verdict" id="conntest">
+    <div class="ctcard">
+      <div class="vtitle">Live connection test</div>
+      <div class="vsub">Pinging the real APIs this agent runs on — no mockups.</div>
+      <div class="ctrow run" id="ct-hermes">
+        <img src="https://solventagent.vercel.app/assets/hermes-logo.png" alt="" onerror="this.style.display='none'">
+        <span class="name">Nous Hermes</span><span class="host" id="ct-hermes-host">inference-api.nousresearch.com</span>
+        <span class="pill" id="ct-hermes-pill"><span class="spin"></span>pinging…</span>
+      </div>
+      <div class="ctrow run" id="ct-nemotron">
+        <img src="https://solventagent.vercel.app/assets/nvidia-logo.png" alt="" onerror="this.style.display='none'">
+        <span class="name">NVIDIA Nemotron</span><span class="host" id="ct-nemotron-host">integrate.api.nvidia.com</span>
+        <span class="pill" id="ct-nemotron-pill"><span class="spin"></span>pinging…</span>
+      </div>
+      <div class="ctrow run" id="ct-stripe">
+        <img src="https://solventagent.vercel.app/assets/stripe-logo.png" alt="" onerror="this.style.display='none'">
+        <span class="name">Stripe</span><span class="host" id="ct-stripe-host">api.stripe.com</span>
+        <span class="pill" id="ct-stripe-pill"><span class="spin"></span>pinging…</span>
+      </div>
+      <div class="ctactions">
+        <button class="btn2" onclick="hideConnTest()">Close</button>
+        <button class="btn2 go" onclick="hideConnTest();runCycle()">Run recovery cycle →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="verdict" id="verdict">
+    <div class="vcard">
+      <div class="vtitle">Recovery cycle complete</div>
+      <div class="vstats">
+        <div class="vs"><div class="n" id="v-cases">0</div><div class="l">cases worked</div></div>
+        <div class="vs rec"><div class="n" id="v-rec">$0</div><div class="l">recovered</div></div>
+        <div class="vs rate"><div class="n" id="v-rate">0%</div><div class="l">recovery rate</div></div>
+      </div>
+      <div class="vbound">Every irreversible action was <b>human-approved</b>.</div>
+      <div class="vbrand">
+        <img src="https://solventagent.vercel.app/assets/hermes-logo.png" alt="" onerror="this.style.display='none'">Nous Hermes ·
+        <img src="https://solventagent.vercel.app/assets/nvidia-logo.png" alt="" onerror="this.style.display='none'">NVIDIA Nemotron ·
+        <img src="https://solventagent.vercel.app/assets/stripe-logo.png" alt="" onerror="this.style.display='none'">Stripe
+      </div>
+      <button class="vclose" onclick="hideVerdict()">Close</button>
+    </div>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => '$' + Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2});
+  const fmt0 = (n) => '$' + Math.round(Number(n||0)).toLocaleString('en-US');
+  const NS = 'http://www.w3.org/2000/svg';
+  let lastQueue = [];
+  let outstanding = 0;
+  let netShown = 0;
+  let running = false;
+  let hbTimer = null;
+
+  /* reactor pulses */
+  function fireNode(name){ const el=$('node-'+name); if(!el) return; el.classList.add('firing'); setTimeout(()=>el.classList.remove('firing'),850); }
+  function coreFlash(kind){ const c=$('core'); const k=kind==='danger'?'danger':'pulse'; c.classList.add(k); setTimeout(()=>c.classList.remove(k),700); }
+  function showFlow(label){ const f=$('flowLabel'); f.textContent=label; f.style.opacity='1'; setTimeout(()=>{ f.style.opacity='0'; },800); }
+  const COLOR = { stripe:'#7d76ff', hermes:'#c9b8ff', nvidia:'#76b900', human:'#39d5ff', solvent:'#37e7bd' };
+  function pulse(arcId,color,reverse,label){
+    const svg=$('arcs'); const arc=$(arcId); if(!svg||!arc) return;
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('r','6'); c.setAttribute('fill',COLOR[color]||'#fff'); c.setAttribute('filter','url(#glow)');
+    const m=document.createElementNS(NS,'animateMotion');
+    m.setAttribute('dur','0.85s'); m.setAttribute('fill','freeze'); m.setAttribute('calcMode','linear');
+    m.setAttribute('keyPoints',reverse?'1;0':'0;1'); m.setAttribute('keyTimes','0;1');
+    const mp=document.createElementNS(NS,'mpath');
+    mp.setAttributeNS('http://www.w3.org/1999/xlink','href','#'+arcId); mp.setAttribute('href','#'+arcId);
+    m.appendChild(mp); c.appendChild(m); svg.appendChild(c);
+    arc.classList.add('hot');
+    try{ m.beginElement(); }catch(e){}
+    if(label) showFlow(label);
+    setTimeout(()=>{ arc.classList.remove('hot'); c.remove(); },900);
+  }
+  function react(tag,text){
+    const t=String(text||'');
+    switch(tag){
+      case 'HERMES': if(/unavailable|fell back/i.test(t)) return; pulse('arc-hermes','hermes',false,'decision'); fireNode('hermes'); break;
+      case 'NEMOTRON': pulse('arc-nemotron','nvidia',false,/UNSAFE/.test(t)?'unsafe':'scan'); fireNode('nemotron'); break;
+      case 'STRIPE': pulse('arc-stripe','stripe',false,/payment link/i.test(t)?'link':'invoice'); fireNode('stripe'); break;
+      case 'PAID': pulse('arc-stripe','solvent',true,'paid'); fireNode('stripe'); coreFlash(); break;
+      case 'POLICY': if(/approval|human/i.test(t)){ pulse('arc-human','human',true,'boundary'); fireNode('human'); } break;
+      case 'HUMAN':
+        if(/Approved/i.test(t)){ pulse('arc-human','human',false,'approved'); fireNode('human'); }
+        else if(/needed|waiting|requires|Pending|irreversible/i.test(t)){ pulse('arc-human','human',true,'hold'); fireNode('human'); }
+        break;
+      case 'LEDGER': coreFlash(); break;
+      case 'RISK': coreFlash('danger'); break;
+    }
+  }
+
+  /* telemetry on nodes + terminal */
+  function setWire(provider, host, status, ms){
+    const map={ HERMES:'hermes', NEMOTRON:'nemotron', STRIPE:'stripe' };
+    const node=map[provider]; if(!node) return;
+    const live = !!status;
+    const line = (live?('<span class="ok">'+status+' OK</span>'):'<span style="color:var(--danger)">retry…</span>') + (ms!=null?(' · '+ms+'ms'):'') ;
+    const w=$('wire-'+node); if(w){ w.innerHTML = (host?host+'<br>':'') + line; w.classList.remove('fresh'); void w.offsetWidth; w.classList.add('fresh'); }
+    const suffix = provider==='NEMOTRON'?'nemo':node;
+    // header chip — live pulsing ping
+    const chip=$('chip-'+suffix);
+    if(chip){
+      chip.classList.toggle('on', live); chip.classList.toggle('down', !live);
+      const b=chip.querySelector('b'); if(b) b.textContent = live ? (ms!=null?ms+'ms':'live') : 'retry';
+      chip.classList.remove('flash'); void chip.offsetWidth; chip.classList.add('flash');
+    }
+    // terminal connection row
+    const row=$('conn-'+suffix);
+    if(row){ row.classList.toggle('on', live); const b=row.querySelector('b');
+      if(b) b.textContent = live ? ('connected · '+(host||'')+(ms!=null?(' · '+ms+'ms'):'')) : 'reconnecting…'; }
+  }
+
+  /* queue */
+  function ring(score,band){
+    const r=17,c=2*Math.PI*r,pct=score==null?0:score,off=c*(1-pct);
+    return '<div class="ring"><svg width="42" height="42" viewBox="0 0 42 42">'
+      +'<circle cx="21" cy="21" r="'+r+'" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="4"/>'
+      +'<circle cx="21" cy="21" r="'+r+'" fill="none" class="stroke-'+(band||'low')+'" stroke-width="4" stroke-linecap="round" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'
+      +'</svg><div class="pct band-'+(band||'low')+'">'+(score==null?'–':Math.round(pct*100))+'</div></div>';
+  }
+  function renderQueue(items){
+    if(!items||!items.length){ $('queue').innerHTML='<div class="empty">No overdue invoices.</div>'; return; }
+    outstanding = items.reduce((s,i)=>s+Number(i.amount||0),0);
+    $('bar-cap').textContent = '$0 of '+fmt0(outstanding)+' recovered';
+    $('queue').innerHTML = items.map(function(it){
+      return '<div class="case" id="case-'+it.id+'">'+ring(it.score,it.band)
+        +'<div class="meta"><div class="top"><span class="client">'+it.client+'</span><span class="amt">'+fmt(it.amount)+'</span></div>'
+        +'<div class="sub">#'+it.id+' · '+it.daysOverdue+'d overdue</div></div>'
+        +'<div><div class="exp">E '+fmt(it.expected)+'</div><div class="sub band-'+it.band+'" style="text-align:right">'+(it.band||'').toUpperCase()+'</div></div></div>';
+    }).join('');
+  }
+  function setActive(id){
+    document.querySelectorAll('.case').forEach(c=>c.classList.remove('active'));
+    if(id!=null){ const c=$('case-'+id); if(c) c.classList.add('active');
+      const inv=lastQueue.find(x=>x.id===id); $('cnow').textContent=inv?('#'+inv.id+' '+inv.client):'processing';
+    } else { $('cnow').textContent='cycle complete'; }
+  }
+
+  /* agent draft (thinks out loud) */
+  const STAGE_LABEL = { gentle_reminder:'gentle reminder', firm_reminder:'firm reminder', payment_plan:'payment plan', settlement_offer:'settlement offer', escalation:'escalation' };
+  const SCREEN_LABEL = { auto:'auto-send (gentle)', needs_approval:'queued for human approval', blocked:'blocked by hard cap' };
+  function renderDraft(d){
+    $('draftcard').classList.remove('empty');
+    $('dc-stage').textContent = STAGE_LABEL[d.action] || d.action || '—';
+    $('dc-client').textContent = '#'+d.id+' '+d.client;
+    $('dc-reason').textContent = d.reason ? ('“'+d.reason+'”') : '';
+    $('dc-msg').textContent = d.message || '';
+    const sBy = /nemotron/i.test(d.screenedBy||'') ? 'NVIDIA Nemotron: safe ✓' : 'safety gate: pass ✓';
+    $('dc-screen').textContent = sBy + ' · ' + (SCREEN_LABEL[d.screen] || d.screen || '');
+  }
+
+  /* approvals */
+  function renderApprovals(items){
+    if(!items||!items.length){ $('approvals').innerHTML='<div class="empty">No actions waiting. Irreversible steps appear here.</div>'; return; }
+    $('approvals').innerHTML = items.map(function(a){
+      return '<div class="appr"><div class="label">'+a.label+'</div>'
+        +'<div class="sub"><span class="tag">'+a.action+'</span>'+fmt(a.amount)+' · '+a.daysOverdue+'d overdue'+(a.discount?(' · '+Math.round(a.discount*100)+'% discount'):'')+'</div>'
+        +'<div class="btns"><button class="btn approve" onclick="decide('+a.id+',true)">Approve</button>'
+        +'<button class="btn hold" onclick="decide('+a.id+',false)">Hold for human</button></div></div>';
+    }).join('');
+    $('tile-boundary').textContent='HELD';
+  }
+
+  /* log + treasury */
+  function addLog(tag,text){
+    const el=$('log'); const ln=document.createElement('div'); ln.className='ln';
+    ln.innerHTML='<span class="t t-'+tag+'">['+tag+']</span><span class="msg">'+text+'</span>';
+    el.appendChild(ln); el.scrollTop=el.scrollHeight;
+  }
+  function animateNet(to){
+    const from=netShown; const start=performance.now(); const dur=600;
+    function step(now){ const p=Math.min(1,(now-start)/dur); const v=from+(to-from)*(p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2);
+      $('t-net').textContent=fmt(v); if(p<1) requestAnimationFrame(step); else { $('t-net').textContent=fmt(to); netShown=to; } }
+    requestAnimationFrame(step);
+  }
+  function renderTreasury(s){
+    $('t-rec').textContent=fmt(s.recovered); $('t-cost').textContent='-'+fmt(s.agentCost);
+    animateNet(Number(s.netRecovered)||0);
+    const rate = outstanding>0 ? Math.round((Number(s.recovered)/outstanding)*100) : null;
+    $('t-rate').textContent = rate==null ? '—' : (rate+'%');
+    if(outstanding>0){ $('bar-fill').style.width=Math.min(100,(Number(s.recovered)/outstanding)*100)+'%';
+      $('bar-cap').textContent=fmt0(s.recovered)+' of '+fmt0(outstanding)+' recovered'; }
+    if(s.resolved){ $('tile-tasks').textContent=s.resolved; }
+  }
+
+  function setConn(hermes,nemo,stripe){
+    function apply(chipId,rowId,on,text){
+      const chip=$(chipId); chip.classList.toggle('on',on); chip.querySelector('b').textContent=text;
+      const row=$(rowId); row.classList.toggle('on',on); row.querySelector('b').textContent=on?'connected':text;
+    }
+    apply('chip-hermes','conn-hermes',hermes==='live',hermes);
+    apply('chip-nemo','conn-nemo',nemo==='live',nemo);
+    apply('chip-stripe','conn-stripe',/test mode/.test(stripe),stripe);
+  }
+
+  /* verdict card */
+  function showVerdict(d){
+    $('v-cases').textContent = (d.resolved||'').split('/').pop().trim() || '0';
+    $('v-rec').textContent = fmt0(d.recovered);
+    $('v-rate').textContent = (d.rate!=null?d.rate:0)+'%';
+    $('verdict').classList.add('show');
+  }
+  function hideVerdict(){ $('verdict').classList.remove('show'); }
+
+  /* live connection test */
+  function ctSet(provider, r){
+    const row=$('ct-'+provider); const pill=$('ct-'+provider+'-pill'); const host=$('ct-'+provider+'-host');
+    if(!row) return;
+    row.classList.remove('run','ok','fail');
+    if(r && r.ok){ row.classList.add('ok'); pill.textContent = '200 OK · '+(r.ms!=null?r.ms+'ms':'live'); if(r.host) host.textContent=r.host; }
+    else { row.classList.add('fail'); pill.textContent = (r&&r.status==='no key')?'no key':(r&&r.status==='mock'?'mock mode':'unreachable'); }
+  }
+  function testConnections(){
+    ['hermes','nemotron','stripe'].forEach(function(p){
+      const row=$('ct-'+p), pill=$('ct-'+p+'-pill');
+      row.classList.remove('ok','fail'); row.classList.add('run');
+      pill.innerHTML='<span class="spin"></span>pinging…';
+    });
+    $('conntest').classList.add('show');
+    fetch('/api/ping',{method:'POST'}).then(function(r){return r.json();}).then(function(res){
+      ctSet('hermes',res.hermes); ctSet('nemotron',res.nemotron); ctSet('stripe',res.stripe);
+    }).catch(function(){ ['hermes','nemotron','stripe'].forEach(function(p){ ctSet(p,{ok:false}); }); });
+  }
+  function hideConnTest(){ $('conntest').classList.remove('show'); }
+
+  function runCycle(){
+    running = true;
+    $('runBtn').disabled=true; $('runBtn').textContent='Running…';
+    $('log').innerHTML=''; $('tile-safety').textContent='SCANNING'; $('tile-boundary').textContent='ARMED';
+    netShown=0; $('draftcard').classList.add('empty');
+    $('dc-stage').textContent='running'; $('dc-client').textContent='agent is working the queue…';
+    hideVerdict();
+    fetch('/api/run',{method:'POST'});
+  }
+  function decide(id,approved){ fetch('/api/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,approved:approved})}); }
+
+  const es=new EventSource('/api/stream');
+  es.onmessage=function(e){
+    const d=JSON.parse(e.data);
+    switch(d.type){
+      case 'reset': renderApprovals([]); $('tile-safety').textContent='SCANNING'; break;
+      case 'mode': setConn(d.hermes,d.nemotron,d.stripe); break;
+      case 'queue': lastQueue=d.items; renderQueue(d.items); break;
+      case 'wire': setWire(d.provider,d.host,d.status,d.ms); break;
+      case 'ping': if(d.results){ ctSet('hermes',d.results.hermes); ctSet('nemotron',d.results.nemotron); ctSet('stripe',d.results.stripe); } break;
+      case 'draft': renderDraft(d); break;
+      case 'approvals': renderApprovals(d.items); break;
+      case 'active': setActive(d.id); break;
+      case 'log': addLog(d.tag,d.text); react(d.tag,d.text); break;
+      case 'treasury': renderTreasury(d); break;
+      case 'done': renderTreasury(d); setActive(null);
+        $('tile-safety').textContent='PASS'; $('tile-boundary').textContent='HELD';
+        $('runBtn').disabled=false; $('runBtn').textContent='Run recovery cycle';
+        running=false; setTimeout(()=>showVerdict(d),500); break;
+    }
+  };
+
+  /* live heartbeat — keeps the latency badges tracking in real time */
+  function heartbeat(){ if(running) return; fetch('/api/ping',{method:'POST'}).catch(function(){}); }
+  function startHeartbeat(){ if(hbTimer) return; setTimeout(heartbeat,700); hbTimer=setInterval(heartbeat,5000); }
+  startHeartbeat();
+</script>
+</body>
+</html>
