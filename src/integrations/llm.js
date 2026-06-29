@@ -6,6 +6,7 @@
 
 const { nous, nvidia } = require('../config');
 const { trace, host } = require('../util/trace');
+const metrics = require('../util/metrics');
 
 const STAGE_ACTIONS = ['gentle_reminder', 'firm_reminder', 'payment_plan', 'settlement_offer', 'escalation'];
 
@@ -18,6 +19,7 @@ async function chat(tag, baseUrl, apiKey, body) {
     body: JSON.stringify(body),
   });
   const ms = Date.now() - t0;
+  metrics.record(tag, { host: host(baseUrl), status: res.status, ms });
   if (!res.ok) {
     const t = await res.text().catch(() => '');
     trace(tag, `← ${res.status} ERR   ${ms}ms`);
@@ -100,4 +102,37 @@ async function nemotronScreenText(text) {
   return { safe, categories, raw: txt.slice(0, 160), source: 'nemotron' };
 }
 
-module.exports = { hermesDecide, nemotronScreenText, STAGE_ACTIONS };
+/**
+ * Live connectivity check for the dashboard "Test connections" button.
+ * Makes a real, minimal call to each provider and returns { ok, status, ms, host }.
+ * No key → { ok:false, status:'no key' }.
+ */
+async function pingHermes() {
+  if (!nous.apiKey) return { ok: false, status: 'no key', ms: null, host: host(nous.baseUrl) };
+  const t0 = Date.now();
+  try {
+    await chat('HERMES', nous.baseUrl, nous.apiKey, {
+      model: nous.model, max_tokens: 1, temperature: 0,
+      messages: [{ role: 'user', content: 'ping' }],
+    });
+    return { ok: true, status: 200, ms: Date.now() - t0, host: host(nous.baseUrl) };
+  } catch (e) {
+    return { ok: false, status: 'error', ms: Date.now() - t0, host: host(nous.baseUrl) };
+  }
+}
+
+async function pingNemotron() {
+  if (!nvidia.apiKey) return { ok: false, status: 'no key', ms: null, host: host(nvidia.baseUrl) };
+  const t0 = Date.now();
+  try {
+    await chat('NEMOTRON', nvidia.baseUrl, nvidia.apiKey, {
+      model: nvidia.model, max_tokens: 1, temperature: 0,
+      messages: [{ role: 'user', content: 'Hello, this is a friendly payment reminder.' }],
+    });
+    return { ok: true, status: 200, ms: Date.now() - t0, host: host(nvidia.baseUrl) };
+  } catch (e) {
+    return { ok: false, status: 'error', ms: Date.now() - t0, host: host(nvidia.baseUrl) };
+  }
+}
+
+module.exports = { hermesDecide, nemotronScreenText, pingHermes, pingNemotron, STAGE_ACTIONS };

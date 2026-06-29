@@ -3,6 +3,7 @@
 const { useRealStripe, stripeKey } = require('../config');
 const mockInvoices = require('../data/invoices');
 const { trace } = require('../util/trace');
+const metrics = require('../util/metrics');
 
 let stripe = null;
 if (useRealStripe) {
@@ -22,6 +23,7 @@ async function listOverdueInvoices() {
   trace('STRIPE', '→ GET api.stripe.com/v1/invoices?status=open   (test mode)');
   const t0 = Date.now();
   const res = await stripe.invoices.list({ status: 'open', limit: 100 });
+  metrics.record('STRIPE', { host: 'api.stripe.com', status: 200, ms: Date.now() - t0 });
   trace('STRIPE', `← 200 OK   ${res.data.length} invoices   ${Date.now() - t0}ms`);
   const overdue = res.data
     .filter((i) => i.metadata && i.metadata.ref) // our seeded cases (seed.js)
@@ -63,8 +65,26 @@ async function createPaymentLink(inv) {
   if (s.status === 'draft') {
     s = await stripe.invoices.finalizeInvoice(inv._stripeId);
   }
+  metrics.record('STRIPE', { host: 'api.stripe.com', status: 200, ms: Date.now() - t0 });
   trace('STRIPE', `← 200 OK   ${s.status}   ${Date.now() - t0}ms`);
   return s.hosted_invoice_url || `https://pay.stripe.test/mock/${inv.id}`;
 }
 
-module.exports = { listOverdueInvoices, createPaymentLink, isReal: useRealStripe };
+/**
+ * Live connectivity check for the dashboard "Test connections" button.
+ * Makes a real, cheap Stripe call. No key → mock result.
+ */
+async function ping() {
+  if (!useRealStripe) return { ok: false, status: 'mock', ms: null, host: 'mock data' };
+  const t0 = Date.now();
+  try {
+    await stripe.invoices.list({ limit: 1 });
+    const ms = Date.now() - t0;
+    metrics.record('STRIPE', { host: 'api.stripe.com', status: 200, ms });
+    return { ok: true, status: 200, ms, host: 'api.stripe.com' };
+  } catch (e) {
+    return { ok: false, status: 'error', ms: Date.now() - t0, host: 'api.stripe.com' };
+  }
+}
+
+module.exports = { listOverdueInvoices, createPaymentLink, ping, isReal: useRealStripe };
